@@ -95,3 +95,59 @@ rb_default_data_file <- function(filename) {
   if (file.exists(local)) return(local)
   ""
 }
+
+
+
+
+
+# ============================================================
+# MODULE 5 — Taxonomy join, QC filtering, column standardization
+# Destination guide is noted above each function/fix.
+# ============================================================
+ 
+#' Standardize column names to the package's internal schema
+#'
+#' Renames arbitrary source-table column names to the standard names the
+#' rest of regionbarcoder expects (species, sequence, qc_flag, etc.). This
+#' is the piece that lets Module 1's per-source parsing (NCBI/BOLD/MitoFish/
+#' MIDORI2/local, or any future source) hand off to the rest of the pipeline
+#' without every downstream function needing to know each source's original
+#' column names.
+#'
+#' @param data A data.frame with arbitrary column names.
+#' @param column_map Named character vector: names(column_map) = the
+#'   standard name expected internally, values = the column name actually
+#'   present in `data`. e.g.
+#'   c(species = "species_name", sequence = "seq", qc_flag = "flag")
+#' @param drop_unmapped If FALSE (default), columns not mentioned in
+#'   column_map are kept as-is. If TRUE, only the mapped columns are kept
+#'   (useful right before writing to a shared table like yzfishdb_final).
+#' @return `data` with columns renamed to the standard schema.
+rb_standardize_columns <- function(data, column_map, drop_unmapped = FALSE) {
+  missing_source <- setdiff(unname(column_map), names(data))
+  if (length(missing_source) > 0) {
+    stop("Columns referenced in column_map not found in data: ",
+         paste(missing_source, collapse = ", "), call. = FALSE)
+  }
+ 
+  # column_map is standard_name = source_name; we rename source_name -> standard_name
+  for (standard_name in names(column_map)) {
+    source_name <- column_map[[standard_name]]
+    if (!identical(source_name, standard_name)) {
+      names(data)[names(data) == source_name] <- standard_name
+    }
+  }
+ 
+  if (isTRUE(drop_unmapped)) {
+    data <- data[, names(column_map), drop = FALSE]
+  }
+  data
+}
+ 
+# --- Test ---
+# raw <- data.frame(species_name = "Homo sapiens", seq = "ACGT", flag = "pass")
+# rb_standardize_columns(raw, column_map = c(species = "species_name",
+#                                            sequence = "seq",
+#                                            qc_flag = "flag"))
+# expect: columns renamed to species / sequence / qc_flag; values untouched
+ 
