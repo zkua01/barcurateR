@@ -1,0 +1,303 @@
+# ============================================================
+# MODULE 1 — Source standardization (replaces edna_ref_db_standard.R)
+#
+# This is the largest and most YZFishDB-flavored module. Per the plan,
+# I'm generalizing everything EXCEPT the Megalobrama tree-based mislabel
+# correction (Stage 9's process_gene()/extract_wrong_terminalis()/
+# node-52 logic) — only its reusable core (alignment + tree building)
+# is pulled out as rb_build_gene_tree(). The clade-inspection/mislabel
+# logic itself should stay a documented example script in your repo,
+# not a package function — see the note at the end of this file.
+#
+# ONE BEHAVIOR CHANGE flagged inline below (in rb_extract_markers) —
+# not a pure mechanical extraction like the other functions. Please
+# review that one specifically before treating this as a drop-in
+# replacement.
+# ============================================================
+
+
+# ------------------------------------------------------------
+# rb_default_marker_patterns() / rb_extract_markers()
+# DESTINATION: R/parse.R (new file)
+#
+# Generalizes extract_markers(). marker_patterns, genome_pattern,
+# multi_gene_pattern, and other_gene_pattern are now parameters
+# instead of literals baked into the function body — a dataset with a
+# different marker set (e.g. ITS/rbcL for plants, or a 5-marker fish
+# panel) supplies its own marker_patterns list instead of editing the
+# function.
+# ------------------------------------------------------------
+
+rb_default_marker_patterns <- function() {
+  list(
+    "12S" = "12s|mt-rnr1",
+    "16S" = "16s|mt-rnr2",
+    "COI" = "coi|co1|cox1|cytochrome c oxidase subunit"
+  )
+}
+
+rb_extract_markers <- function(description,
+                                marker_patterns = rb_default_marker_patterns(),
+                                genome_pattern = "complete genome|mitochondrion, complete genome|mitogenome",
+                                multi_gene_pattern = paste0(
+                                  "genes for|gene for|and|;|,.*and|partial.*complete|",
+                                  "complete.*partial|complete.*complete|rrna.*rrna|",
+                                  "rrna.*trna|trna.*rrna"
+                                ),
+                                other_gene_pattern = "trna|transfer rna|cytb|nd[0-9]|atp[0-9]|nad[0-9]") {
+  desc_lower <- tolower(description)
+
+  if (stringr::str_detect(desc_lower, genome_pattern)) {
+    return("genome_complete")
+  }
+
+  detect_completeness <- function(marker_pattern) {
+    if (stringr::str_detect(desc_lower, paste0(marker_pattern, ".*partial|partial.*", marker_pattern))) {
+      "partial"
+    } else if (stringr::str_detect(desc_lower, paste0(marker_pattern, ".*complete|complete.*", marker_pattern))) {
+      "complete"
+    } else {
+      "unknown"
+    }
+  }
+
+  is_multi_gene <- stringr::str_detect(desc_lower, multi_gene_pattern)
+  present_markers <- names(marker_patterns)[
+    vapply(marker_patterns, function(p) stringr::str_detect(desc_lower, p), logical(1))
+  ]
+
+  # BEHAVIOR CHANGE (not a pure extraction) — flagging for your review:
+  # The original script's "has_other_genes" check additionally required
+  # (target_count == 0 || length(markers) < target_count), where
+  # target_count was a total pattern-hit count computed by
+  # count_target_patterns() across ALL markers' patterns combined into
+  # one flat vector. In practice this extra condition mostly just
+  # re-confirmed what the trna/cytb/nd/atp/nad check already signaled —
+  # it doesn't discriminate additional real cases in the sample
+  # descriptions I can see. I've dropped it here in favor of just the
+  # direct signal (presence of other-gene terms), since carrying
+  # target_count forward as a generalized parameter would add
+  # complexity without a clear generalizable meaning. If you find
+  # NCBI/BOLD descriptions where this mattered, let me know the case
+  # and I'll reinstate an equivalent count-based parameter.
+  if (is_multi_gene) {
+    markers <- character(0)
+    for (marker_name in present_markers) {
+      comp <- detect_completeness(marker_patterns[[marker_name]])
+      markers <- c(markers, paste0(marker_name, "_", comp))
+    }
+    has_other <- stringr::str_detect(desc_lower, other_gene_pattern)
+    if (has_other) {
+      comp_other <- if (stringr::str_detect(desc_lower, "partial")) "partial"
+                    else if (stringr::str_detect(desc_lower, "complete")) "complete"
+                    else "unknown"
+      markers <- c(markers, paste0("other_", comp_other))
+    }
+    if (length(markers) > 0) return(paste(unique(markers), collapse = ";"))
+    return("other_unknown")
+  }
+
+  if (length(present_markers) > 0) {
+    marker_name <- present_markers[[1]]
+    comp <- if (stringr::str_detect(desc_lower, "partial")) "partial"
+            else if (stringr::str_detect(desc_lower, "complete")) "complete"
+            else "unknown"
+    return(paste0(marker_name, "_", comp))
+  }
+
+  "other_unknown"
+}
+
+# --- Test ---
+# rb_extract_markers("Danio rerio 12S ribosomal RNA gene, partial sequence")
+# expect: "12S_partial"
+#
+# rb_extract_markers("Some species mitochondrion, complete genome")
+# expect: "genome_complete"
+#
+# rb_extract_markers("Species tRNA-Phe gene, 12S ribosomal RNA gene, and tRNA-Val gene, complete sequence")
+# expect: "12S_complete;other_complete" (multi-gene path, other-gene terms present)
+#
+# rb_extract_markers("Some plant ITS region, partial sequence",
+#                     marker_patterns = list(ITS = "its"))
+# expect: "ITS_partial" — confirms a completely different marker set works
+#         without editing the function
+
+
+# ------------------------------------------------------------
+# rb_parse_source_table()
+# DESTINATION: R/parse.R
+#
+# Generalizes the 5 separate hardcoded per-source blocks (NCBI/BOLD/
+# MitoFish/MIDORI2/local) into one function driven by a column_map,
+# using rb_standardize_columns() from Module 5 to do the renaming.
+# ------------------------------------------------------------
+
+rb_parse_source_table <- function(raw, source_name, column_map,
+                                   marker_fn = rb_extract_markers,
+                                   description_col = NULL) {
+  parsed <- rb_standardize_columns(raw, column_map)
+  parsed$source <- source_name
+  parsed$sequence <- rb_clean_sequence(parsed$sequence)
+  parsed$length <- nchar(parsed$sequence)
+
+  if (!is.null(description_col) && description_col %in% names(raw)) {
+    parsed$seq_type <- vapply(raw[[description_col]], marker_fn, character(1))
+  } else if (!"seq_type" %in% names(parsed)) {
+    parsed$seq_type <- "other_unknown"
+  }
+
+  parsed
+}
+
+# --- Test ---
+# raw <- data.frame(acc = c("X1","X2"),
+#                    sp = c("Homo sapiens","Mus musculus"),
+#                    seq = c("ACGTACGT","TTGGTTGG"),
+#                    desc = c("12S ribosomal RNA gene, partial sequence",
+#                             "mitochondrion, complete genome"))
+# rb_parse_source_table(raw, source_name = "test_src",
+#                        column_map = c(sequence_id = "acc", species = "sp", sequence = "seq"),
+#                        description_col = "desc")
+# expect: source = "test_src" for both rows; seq_type = "12S_partial" and
+#         "genome_complete" respectively — proves this works for an
+#         arbitrary non-fish source without writing a new hardcoded block
+
+# ------------------------------------------------------------
+# rb_reverse_complement() / rb_remove_primers()
+# DESTINATION: R/parse.R
+#
+# Already dataset-agnostic logic — pulled out of the BOLD-only code
+# path so any source with primer-flanked sequences can call it.
+# ------------------------------------------------------------
+
+rb_reverse_complement <- function(dna_seq) {
+  complement <- chartr("ATCG", "TAGC", dna_seq)
+  stringi::stri_reverse(complement)
+}
+
+rb_remove_primers <- function(sequence, f_primer_seqs = NA_character_,
+                               r_primer_seqs = NA_character_) {
+  if (all(is.na(f_primer_seqs)) && all(is.na(r_primer_seqs))) return(sequence)
+
+  for (f_primer in f_primer_seqs) {
+    if (!is.na(f_primer) && startsWith(sequence, f_primer)) {
+      sequence <- substr(sequence, nchar(f_primer) + 1, nchar(sequence))
+      break
+    }
+  }
+  for (r_primer in r_primer_seqs) {
+    if (!is.na(r_primer)) {
+      rc_primer <- rb_reverse_complement(r_primer)
+      if (endsWith(sequence, rc_primer)) {
+        sequence <- substr(sequence, 1, nchar(sequence) - nchar(rc_primer))
+        break
+      }
+    }
+  }
+  sequence
+}
+
+# --- Test ---
+# rb_remove_primers("AAACGTACGTTT", f_primer_seqs = "AAA", r_primer_seqs = "TTT")
+# expect: "CGTACGT"
+#
+# rb_remove_primers("CGTACGT", f_primer_seqs = NA, r_primer_seqs = NA)
+# expect: "CGTACGT" unchanged (no primers supplied)
+
+
+# ------------------------------------------------------------
+# rb_combine_sources()
+# DESTINATION: R/parse.R
+#
+# Trivial generalization of Stage 6's bind_rows() %>% distinct() —
+# takes a named/unnamed list of data frames instead of 5 hardcoded
+# objects (mitofish_clean, bold_clean, ncbi_clean, midori_raw, local_raw).
+# ------------------------------------------------------------
+
+rb_combine_sources <- function(source_list, species_col = "species", sequence_col = "sequence") {
+  combined <- dplyr::bind_rows(source_list)
+  combined[[sequence_col]] <- rb_clean_sequence(combined[[sequence_col]])
+  combined <- combined[!duplicated(combined[c(species_col, sequence_col)]), , drop = FALSE]
+  row.names(combined) <- NULL
+  combined
+}
+
+# --- Test ---
+# a <- data.frame(species = "sp1", sequence = "ACGT")
+# b <- data.frame(species = "sp1", sequence = "acgt")  # same seq, different case
+# rb_combine_sources(list(a, b))
+# expect: 1 row (duplicate collapsed after case-normalization)
+
+
+# ------------------------------------------------------------
+# rb_resolve_ambiguous()
+# DESTINATION: R/parse.R
+#
+# Generalizes Stage 7. The original script's hard stop() when no
+# resolution file exists becomes a configurable on_unresolved
+# behavior; the "write a CSV for manual review" side effect is
+# preserved but now opt-in via flag_output_path rather than automatic.
+# ------------------------------------------------------------
+
+rb_resolve_ambiguous <- function(data, species_col = "species", sequence_col = "sequence",
+                                  resolution_table = NULL,
+                                  on_unresolved = c("stop", "warn", "drop"),
+                                  flag_output_path = NULL) {
+  on_unresolved <- rb_match_arg(on_unresolved, c("stop", "warn", "drop"))
+
+  dup_check <- data %>%
+    dplyr::group_by(.data[[sequence_col]]) %>%
+    dplyr::filter(dplyr::n_distinct(.data[[species_col]]) > 1) %>%
+    dplyr::ungroup()
+
+  if (nrow(dup_check) == 0) {
+    return(data)
+  }
+
+  if (is.null(resolution_table)) {
+    if (!is.null(flag_output_path)) {
+      utils::write.csv(dup_check, flag_output_path, row.names = FALSE)
+    }
+    msg <- sprintf(
+      "%d ambiguous sequences found (assigned to multiple species) with no resolution_table supplied.",
+      nrow(dup_check)
+    )
+    if (on_unresolved == "stop") stop(msg, call. = FALSE)
+    if (on_unresolved == "warn") { warning(msg, call. = FALSE); return(data) }
+    if (on_unresolved == "drop") {
+      warning(paste(msg, "Dropping them."), call. = FALSE)
+      return(dplyr::anti_join(data, dup_check, by = sequence_col))
+    }
+  }
+
+  # resolution_table expected to carry an `action` column: "keep" or "combine"
+  keep_rows <- resolution_table[resolution_table$action == "keep", , drop = FALSE]
+  keep_rows$action <- NULL
+
+  combine_rows <- resolution_table[resolution_table$action == "combine", , drop = FALSE]
+  if (nrow(combine_rows) > 0) {
+    combine_rows <- combine_rows %>%
+      dplyr::group_by(.data[[sequence_col]]) %>%
+      dplyr::summarise(
+        dplyr::across(-dplyr::all_of("action"), ~ paste(unique(.x), collapse = "|")),
+        .groups = "drop"
+      )
+  }
+
+  data %>%
+    dplyr::anti_join(resolution_table, by = sequence_col) %>%
+    dplyr::bind_rows(keep_rows) %>%
+    dplyr::bind_rows(combine_rows) %>%
+    dplyr::distinct(.data[[species_col]], .data[[sequence_col]], .keep_all = TRUE)
+}
+
+# --- Test ---
+# dup <- data.frame(species = c("A","B"), sequence = c("ACGT","ACGT"))
+# rb_resolve_ambiguous(dup, resolution_table = NULL, on_unresolved = "warn")
+# expect: a warning (not a stop()); returns `dup` unchanged
+#
+# rb_resolve_ambiguous(dup, resolution_table = NULL, on_unresolved = "stop")
+# expect: an error, matching the original script's default behavior
+
+
