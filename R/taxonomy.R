@@ -12,6 +12,55 @@ rb_build_taxonomy_string <- function(data, style = c("plain", "rank_prefix")) {
 }
 
 
+# ------------------------------------------------------------
+# rb_standardize_species()
+# DESTINATION: R/taxonomy.R (same file as rb_join_taxonomy from Module 5)
+#
+# Generalizes the species-matching-via-reference-table logic used
+# identically across all 5 source blocks. check_cas() (a call out to
+# Eschmeyer's Catalog of Fishes via rFishTaxa — fish-specific) becomes
+# an optional `taxonomy_lookup` callback, NULL by default, so
+# non-fish datasets skip that step entirely rather than needing a stub.
+#
+# NOTE: the original script's fuzzy-matching cross-check (comparing an
+# NCBI header's extracted species name against the query species name
+# via stringdist) is NOT included here — that's specific to how NCBI
+# headers are parsed, not a general "standardize a name" concern. If
+# you want that preserved, it belongs as an optional step inside
+# rb_parse_source_table() for NCBI-style sources specifically, not in
+# this function. Flag if you'd like me to add it there.
+# ------------------------------------------------------------
+
+rb_standardize_species <- function(names, reference_table,
+                                    name_col = "alternative_clean",
+                                    valid_col = "valid_name",
+                                    taxonomy_lookup = NULL) {
+  rb_required_columns(reference_table, c(name_col, valid_col))
+  names_clean <- tolower(names)
+
+  vapply(names_clean, function(nm) {
+    match <- reference_table[[valid_col]][reference_table[[name_col]] == nm]
+    match <- match[!is.na(match)]
+    if (length(match) > 0) return(match[[1]])
+
+    if (!is.null(taxonomy_lookup)) {
+      looked_up <- tryCatch(taxonomy_lookup(nm), error = function(e) NA_character_)
+      if (!is.na(looked_up)) return(looked_up)
+    }
+    NA_character_
+  }, character(1), USE.NAMES = FALSE)
+}
+
+# --- Test ---
+# ref <- data.frame(alternative_clean = "homo sapiens", valid_name = "Homo sapiens")
+# rb_standardize_species("homo sapiens", reference_table = ref)
+# expect: "Homo sapiens", no taxonomy_lookup call attempted
+#
+# rb_standardize_species("unknown species", reference_table = ref,
+#                         taxonomy_lookup = function(nm) if (nm == "unknown species") "Resolved sp." else NA)
+# expect: "Resolved sp." — confirms the fallback callback fires only
+#         when the reference table lookup misses
+
  
 #' MODULE 5> Join taxonomic lineage onto reference data with configurable defaults
 #'
@@ -68,4 +117,6 @@ rb_join_taxonomy <- function(data, taxonomy_table, by = "species",
 # expect: row 1 fully resolved (genus/family/order from tax table);
 #         row 2 genus/family/order = "UNASSIGNED";
 #         BOTH rows get class = "Mammalia", not "Actinopteri"
- 
+
+
+
