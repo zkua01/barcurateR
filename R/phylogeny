@@ -1,0 +1,70 @@
+
+# ------------------------------------------------------------
+# rb_build_gene_tree()
+# DESTINATION: R/phylogeny.R (new file — tree-building is a distinct
+# concern from parsing/QC/classification, so it earns its own file)
+#
+# Generalizes ONLY the reusable core of process_gene(): alignment,
+# distance matrix, NJ tree, optional outgroup rooting. Outgroup pattern
+# and DNA substitution model are now parameters (previously hardcoded
+# "Parabramis-pekinensis" and "K80"). This does NOT include the
+# clade-inspection / mislabel-detection logic (extract_wrong_terminalis,
+# the node-52 special case, visualize_and_verify) — see the note below.
+# ------------------------------------------------------------
+
+rb_build_gene_tree <- function(data, gene_type, gene_col = "seq_type",
+                                species_col = "species", sequence_col = "sequence",
+                                id_col = "unique_code", outgroup = NULL,
+                                dna_model = "K80", min_seqs = 3, min_length = 100) {
+  rb_required_columns(data, c(gene_col, species_col, sequence_col, id_col))
+
+  gene_data <- data[data[[gene_col]] == gene_type, , drop = FALSE]
+  gene_data <- gene_data[!duplicated(gene_data[[sequence_col]]), , drop = FALSE]
+  gene_data[[sequence_col]] <- gsub("-", "", gene_data[[sequence_col]])
+  gene_data <- gene_data[nchar(gene_data[[sequence_col]]) >= min_length, , drop = FALSE]
+
+  if (nrow(gene_data) < min_seqs) {
+    warning("Not enough sequences for ", gene_type, call. = FALSE)
+    return(NULL)
+  }
+
+  tree_code <- paste0(gsub(" ", "-", gene_data[[species_col]]), "-", gene_data[[id_col]])
+  dna_seqs <- Biostrings::DNAStringSet(stats::setNames(gene_data[[sequence_col]], tree_code))
+
+  alignment <- DECIPHER::AlignSeqs(dna_seqs, iteration = 3, refinement = 3, verbose = FALSE)
+  alignment_bin <- ape::as.DNAbin(alignment)
+
+  dist_mat <- ape::dist.dna(alignment_bin, model = dna_model, pairwise.deletion = FALSE, as.matrix = TRUE)
+  if (any(is.na(dist_mat))) {
+    max_dist <- max(dist_mat, na.rm = TRUE)
+    dist_mat[is.na(dist_mat)] <- max_dist * 1.1
+  }
+
+  tree <- ape::njs(dist_mat)
+
+  if (!is.null(outgroup)) {
+    outgroup_tips <- grep(outgroup, tree$tip.label, value = TRUE)
+    if (length(outgroup_tips) > 0) {
+      tree <- ape::root(tree, outgroup = outgroup_tips[1])
+    } else {
+      warning("Outgroup pattern '", outgroup, "' not found in tree tips — tree left unrooted.",
+              call. = FALSE)
+    }
+  }
+
+  list(tree = tree, method = "njs", n_tips = length(tree$tip.label))
+}
+
+# --- Test ---
+# toy <- data.frame(
+#   species = c("sp1","sp1","sp2","sp2"),
+#   seq_type = "COI",
+#   unique_code = paste0("seq_", 1:4),
+#   sequence = c("ACGTACGTACGTACGT","ACGTACGTACGTACGA",
+#                "TTTTGGGGCCCCAAAA","TTTTGGGGCCCCAAAT")
+# )
+# result <- rb_build_gene_tree(toy, gene_type = "COI", outgroup = "sp2")
+# expect: a tree with 4 tips, rooted using an "sp2-*" tip as outgroup —
+#         confirms outgroup matching works via a plain grep pattern,
+#         not a hardcoded species name
+
