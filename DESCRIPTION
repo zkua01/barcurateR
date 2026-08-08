@@ -1,15 +1,16 @@
-Package: regionbarcoder
-Title: Audit, Deploy, and Export Regional DNA Reference Databases
-Version: 0.1.0
+Package: barcurateR
+Title: Standardize, Curate, Audit, and Deployment of DNA reference databases
+Version: beta
 Authors@R: c(
-    person("Guohuan", "Su", email = "suguohuan@ihb.ac.cn",role = c("aut", "cre")),
-    person("Zi Xun", "Kua",  role = "aut"))
-Author: Guohuan Su [aut, cre], Zi Xun Kua [aut]
-Maintainer: Guohuan Su <suguohuan@ihb.ac.cn>
-Description: Provides tools to query, audit, export, assign amplicon sequence
-    variants, and report regional DNA reference databases for ecological
-    metabarcoding. The package supports local full YZFishDB SQLite releases and
-    enables Yangtze River Basin fish eDNA ASV assignment against YZFishDB.
+    person("zi Xun", "Kua", email = "zixunkua@gmail.com",role = c("aut", "cre")),
+    person("Katja", "Pogacar",  role = "aut")),
+    person("Guohuan", "Su", role = "aut"))
+Author: Zi Xun Kua [aut, cre], Katja Pogacar [aut], Guohuan Su [aut]
+Maintainer: Zi Xun Kua <zixunkua@gmail.com>
+Description: Provides tools to standardize, curate, query, audit, and export DNA reference databases,
+    and assign amplicon sequence variants for ecological metabarcoding in a reproducible manner. 
+    The package is optimized for reference sequence tables from four public repositories: NCBI GeneBank,
+    BOLD, MIDORI2, MitoFish.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
