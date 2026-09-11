@@ -1,9 +1,9 @@
 Package: barcurateR
-Title: Standardize, Curate, Audit, and Deployment of DNA reference databases
-Version: beta
+Title: Standardize, Curate, Audit, and Deploy DNA reference databases
+Version: 0.1.0
 Authors@R: c(
-    person("zi Xun", "Kua", email = "zixunkua@gmail.com",role = c("aut", "cre")),
-    person("Katja", "Pogacar",  role = "aut")),
+    person("Zi Xun", "Kua", email = "zixunkua@gmail.com",role = c("aut", "cre")),
+    person("Katja", "Pogacar",  role = "aut"),
     person("Guohuan", "Su", role = "aut"))
 Author: Zi Xun Kua [aut, cre], Katja Pogacar [aut], Guohuan Su [aut]
 Maintainer: Zi Xun Kua <zixunkua@gmail.com>
