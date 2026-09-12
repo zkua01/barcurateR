@@ -42,12 +42,12 @@ rb_find_full_yzfishdb <- function() {
 }
 
 rb_demo_db_path <- function() {
-  demo_csv <- system.file("extdata", "yzfishdb_demo.csv", package = "regionbarcoder")
+  demo_csv <- system.file("extdata", "yzfishdb_demo.csv", package = "barcurateR")
   if (!nzchar(demo_csv)) {
     demo_csv <- file.path(getwd(), "inst", "extdata", "yzfishdb_demo.csv")
   }
   if (!file.exists(demo_csv)) return("")
-  demo_db <- file.path(tempdir(), "regionbarcoder_demo.sqlite")
+  demo_db <- file.path(tempdir(), "barcurateR_demo.sqlite")
   if (!file.exists(demo_db)) {
     demo <- utils::read.csv(demo_csv, stringsAsFactors = FALSE, check.names = FALSE)
     con <- DBI::dbConnect(RSQLite::SQLite(), demo_db)
@@ -89,36 +89,9 @@ rb_default_data_file <- function(filename) {
     candidate <- file.path(data_dir, filename)
     if (file.exists(candidate)) return(candidate)
   }
-  bundled <- system.file("extdata", filename, package = "regionbarcoder")
+  bundled <- system.file("extdata", filename, package = "barcurateR")
   if (nzchar(bundled)) return(bundled)
   local <- file.path(getwd(), "inst", "extdata", filename)
   if (file.exists(local)) return(local)
   ""
 }
-
-#' Standardize column names to the package's internal schema
-#'
-#' @param column_map Named character vector: names(column_map) = the
-#'   standard name expected internally, values = the column name
-#'   actually present in `data`.
-#' @param drop_unmapped If TRUE, only the mapped columns are kept.
-rb_standardize_columns <- function(data, column_map, drop_unmapped = FALSE) {
-  missing_source <- setdiff(unname(column_map), names(data))
-  if (length(missing_source) > 0) {
-    stop("Columns referenced in column_map not found in data: ",
-         paste(missing_source, collapse = ", "), call. = FALSE)
-  }
-
-  for (standard_name in names(column_map)) {
-    source_name <- column_map[[standard_name]]
-    if (!identical(source_name, standard_name)) {
-      names(data)[names(data) == source_name] <- standard_name
-    }
-  }
-
-  if (isTRUE(drop_unmapped)) {
-    data <- data[, names(column_map), drop = FALSE]
-  }
-  data
-}
-

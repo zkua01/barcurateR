@@ -8,7 +8,7 @@
 \title{Download, cache, and locate the YZFishDB SQLite release}
 \description{
 Install and locate the full YZFishDB SQLite database used by
-\pkg{regionbarcoder}. The database is stored outside the R package because the
+\pkg{barcurateR}. The database is stored outside the R package because the
 archived \code{YZFishDB.db} file is approximately 606 MB.
 }
 \usage{
@@ -28,8 +28,8 @@ directory when it does not already exist.}
 \item{path}{Path to a cached or manually downloaded database file.}
 \item{url}{Download URL for \code{YZFishDB.db}. By default this points to the
 Zenodo record \doi{10.5281/zenodo.18155084}. Users can override it with the
-\code{RB_YZFISHDB_URL} environment variable or the
-\code{regionbarcoder.yzfishdb_url} option.}
+\code{BC_YZFISHDB_URL} environment variable or the
+\code{barcurateR.yzfishdb_url} option.}
 \item{destfile}{Destination path where the database should be cached.}
 \item{overwrite}{Logical. If \code{TRUE}, replace an existing cached database.}
 \item{md5}{Optional expected MD5 checksum. The default Zenodo release uses the
@@ -45,7 +45,7 @@ archived checksum \code{0e5e0c3e294c4a55bcc3065c26db9c84}.}
 file size, and validates checksums when available. It temporarily increases the
 R download timeout and restores the user's previous timeout setting afterwards.
 If repeated downloads fail, download \code{YZFishDB.db} manually from Zenodo and
-set \code{RB_YZFISHDB_PATH} to the local file.
+set \code{BC_YZFISHDB_PATH} to the local file.
 }
 \value{
 \code{rb_yzfishdb_release()} returns a one-row data frame describing the

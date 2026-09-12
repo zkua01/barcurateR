@@ -126,9 +126,9 @@ rb_assign_blastn <- function(asv_fasta, refs, out_dir, min_identity, min_coverag
     stop("makeblastdb executable not found: ", makeblastdb, ". Install BLAST+ or use method = 'exact'.", call. = FALSE)
   }
   dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
-  ref_fasta <- file.path(out_dir, "regionbarcoder_reference.fasta")
-  db_prefix <- file.path(out_dir, "regionbarcoder_reference")
-  blast_out <- file.path(out_dir, "regionbarcoder_blast.tsv")
+  ref_fasta <- file.path(out_dir, "barcurateR_reference.fasta")
+  db_prefix <- file.path(out_dir, "barcurateR_reference")
+  blast_out <- file.path(out_dir, "barcurateR_blast.tsv")
   rb_write_fasta(paste0(">", refs$unique_code), refs$sequence, ref_fasta)
   system2(makeblastdb, c("-in", shQuote(ref_fasta), "-dbtype", "nucl", "-out", shQuote(db_prefix)),
           stdout = FALSE, stderr = FALSE)
@@ -152,7 +152,7 @@ rb_assign_blastn <- function(asv_fasta, refs, out_dir, min_identity, min_coverag
 rb_assign_edna <- function(asv_fasta, con = NULL, db_path = NULL, marker = NULL,
                            method = c("blastn", "exact"), min_identity = 99,
                            min_coverage = 0.9, max_target_seqs = 100,
-                           out_dir = tempfile("regionbarcoder_assign_"),
+                           out_dir = tempfile("barcurateR_assign_"),
                            blastn = "blastn", makeblastdb = "makeblastdb") {
   method <- match.arg(method)
   own_connection <- FALSE

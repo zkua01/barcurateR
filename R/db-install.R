@@ -15,17 +15,17 @@ rb_default_yzfishdb_url <- function() {
 }
 
 rb_db_url <- function() {
-  env_url <- Sys.getenv("RB_YZFISHDB_URL", "")
+  env_url <- Sys.getenv("BC_YZFISHDB_URL", "")
   if (nzchar(env_url)) return(env_url)
-  opt_url <- getOption("regionbarcoder.yzfishdb_url", rb_default_yzfishdb_url())
+  opt_url <- getOption("barcurateR.yzfishdb_url", rb_default_yzfishdb_url())
   if (is.null(opt_url)) return(rb_default_yzfishdb_url())
   as.character(opt_url)
 }
 
 rb_db_dir <- function(create = TRUE) {
-  cache_dir <- Sys.getenv("RB_YZFISHDB_CACHE_DIR", "")
+  cache_dir <- Sys.getenv("BC_YZFISHDB_CACHE_DIR", "")
   if (!nzchar(cache_dir)) {
-    cache_dir <- tools::R_user_dir("regionbarcoder", which = "data")
+    cache_dir <- tools::R_user_dir("barcurateR", which = "data")
   }
   if (isTRUE(create) && !dir.exists(cache_dir)) {
     dir.create(cache_dir, recursive = TRUE, showWarnings = FALSE)
@@ -51,7 +51,7 @@ rb_install_db <- function(url = rb_db_url(), destfile = rb_db_path(),
   if (!nzchar(url)) {
     stop(
       "No YZFishDB download URL is configured. ",
-      "Set RB_YZFISHDB_URL, set option regionbarcoder.yzfishdb_url, ",
+      "Set BC_YZFISHDB_URL, set option barcurateR.yzfishdb_url, ",
       "or pass url = '...' to rb_install_db().",
       call. = FALSE
     )
@@ -70,7 +70,7 @@ rb_install_db <- function(url = rb_db_url(), destfile = rb_db_path(),
     quiet = quiet,
     timeout = timeout,
     retries = retries,
-    downloader = getOption("regionbarcoder.download_file", rb_download_file)
+    downloader = getOption("barcurateR.download_file", rb_download_file)
   )
 
   if (identical(url, rb_default_yzfishdb_url())) {

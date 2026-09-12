@@ -1,5 +1,5 @@
 rb_available_datasets <- function() {
-  demo_path <- system.file("extdata", "small_yzfishdb.sqlite", package = "regionbarcoder")
+  demo_path <- system.file("extdata", "small_yzfishdb.sqlite", package = "barcurateR")
   if (!nzchar(demo_path)) {
     demo_path <- rb_find_full_yzfishdb()
   }

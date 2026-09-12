@@ -1,13 +1,9 @@
-\name{regionbarcoder}
-\alias{regionbarcoder}
+\name{barcurateR}
+\alias{barcurateR}
 \docType{package}
-\title{Audit, deploy, and export regional DNA reference databases}
+\title{Standardize, Curate, Audit, and Deploy DNA reference databases}
 \description{
-\pkg{regionbarcoder} provides an R interface for using regional DNA reference
-databases in ecological metabarcoding. It connects to SQLite releases, downloads
-and caches the Zenodo-hosted YZFishDB release, queries marker-specific sequence
-subsets, exports references for common metabarcoding pipelines, assigns ASV
-FASTA records, builds species matrices, and summarizes database diagnostics.
+\pkg{barcurateR} provides tools to standardize, curate, query, audit, and export DNA reference databases, and assign 
 }
 \details{
 The package is organized into function families:
@@ -23,7 +19,7 @@ The package is organized into function families:
 }
 \examples{
 \dontrun{
-library(regionbarcoder)
+library(barcurateR)
 rb_install_db(timeout = 7200, retries = 5)
 con <- rb_connect()
 rb_tables(con)

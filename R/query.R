@@ -46,24 +46,27 @@ rb_sql_conditions <- function(con, species = NULL, genus = NULL, family = NULL,
 
 rb_get_sequences <- function(con, species = NULL, genus = NULL, family = NULL,
                              marker = NULL, source = NULL, occurrence = NULL,
-                             qc_flag = "pass", exact = FALSE) {
+                             qc_flag = "pass", exact = FALSE,
+                             table_name = "yzfishdb_final") {
   conditions <- rb_sql_conditions(
     con, species = species, genus = genus, family = family,
     marker = marker, source = source, occurrence = occurrence, qc_flag = qc_flag, exact = exact
   )
-  sql <- "select * from yzfishdb_final"
+  tbl <- DBI::dbQuoteIdentifier(con, table_name)
+  sql <- paste("select * from", tbl)
   if (length(conditions) > 0) {
     sql <- paste(sql, "where", paste(conditions, collapse = " and "))
   }
   DBI::dbGetQuery(con, sql)
 }
 
-rb_list_taxa <- function(con, rank = "species", occurrence = NULL, marker = NULL, qc_flag = "pass", exact = FALSE) {
+rb_list_taxa <- function(con, rank = "species", occurrence = NULL, marker = NULL, qc_flag = "pass", exact = FALSE, table_name = "yzfishdb_final") {
   valid <- c("kingdom", "phylum", "class", "order", "family", "genus", "species")
   if (!rank %in% valid) stop("Unsupported rank: ", rank, call. = FALSE)
-  rank_sql <- as.character(DBI::dbQuoteIdentifier(con, rank))
+  rank_sql <- DBI::dbQuoteIdentifier(con, rank)
+  tbl <- DBI::dbQuoteIdentifier(con, table_name)
   conditions <- rb_sql_conditions(con, occurrence = occurrence, marker = marker, qc_flag = qc_flag, exact = exact)
-  sql <- paste0("select ", rank_sql, " as ", rank, ", count(*) as n_sequences from yzfishdb_final")
+  sql <- paste0("select ", rank_sql, " as ", rank, ", count(*) as n_sequences from ", tbl)
   if (length(conditions) > 0) {
     sql <- paste(sql, "where", paste(conditions, collapse = " and "))
   }
@@ -71,38 +74,28 @@ rb_list_taxa <- function(con, rank = "species", occurrence = NULL, marker = NULL
   DBI::dbGetQuery(con, sql)
 }
 
-#' Filter a reference data.frame by marker/source/occurrence/length/qc_flag
-rb_filter_reference <- function(data, marker = NULL, source = NULL, occurrence = NULL,
-                                 min_length = NULL, max_length = NULL,
-                                 qc_flag = "pass", exact = FALSE) {
+rb_filter_reference <- function(data, marker = NULL, source = NULL, occurrence = NULL, min_length = NULL, max_length = NULL, qc_flag = "pass", exact = FALSE) {
   out <- data
   if (!is.null(marker)) out <- out[out$seq_type %in% marker, , drop = FALSE]
   if (!is.null(source)) out <- out[out$source %in% source, , drop = FALSE]
   if (!is.null(occurrence)) out <- out[out$occurrence %in% occurrence, , drop = FALSE]
-  if (!is.null(qc_flag)) {
+  if (!is.null(qc_flag)){
     qc_flag <- qc_flag[!is.na(qc_flag)]
     keep <- rep(FALSE, nrow(out))
-    for (flag in qc_flag) {
-      if (exact) {
+    for(flag in qc_flag){
+      if(exact){
         keep <- keep | (out$qc_flag == flag)
-      } else {
-        if (identical(flag, "pass")) {
+      } else{
+        if(identical(flag, "pass")){
           keep <- keep | (out$qc_flag == "pass")
         } else {
-          # BUGFIX 2026-08-03: was `out$qcflag` (nonexistent column —
-          # missing underscore) instead of `out$qc_flag`. A nonexistent
-          # column returns NULL, and grepl(flag, NULL) silently returns
-          # logical(0), so `keep <- keep | logical(0)` left `keep`
-          # unchanged with no error thrown. Net effect: every non-exact,
-          # non-"pass" qc_flag exclusion silently did nothing in every
-          # prior call. Fixed to reference the real column, out$qc_flag.
           keep <- keep | grepl(flag, out$qc_flag, fixed = TRUE)
         }
       }
     }
-    out <- out[keep, , drop = FALSE]
+    out <- out[keep,,drop=FALSE]
   }
-
+  
   seq_len <- nchar(rb_clean_sequence(out$sequence))
   if (!is.null(min_length)) out <- out[seq_len >= min_length, , drop = FALSE]
   if (!is.null(max_length)) out <- out[seq_len <= max_length, , drop = FALSE]
@@ -110,26 +103,12 @@ rb_filter_reference <- function(data, marker = NULL, source = NULL, occurrence =
   out
 }
 
-#' Exclude sequences matching any of a set of QC flags (in-memory filter)
-#'
-#' Thin wrapper around rb_filter_reference() for the common "keep
-#' everything except these flags" case.
-rb_qc_filter <- function(data, qc_flag_col = "qc_flag",
-                         exclude = c("contaminant", "numt", "divergent",
-                                     "frameshifted", "internal_stop",
-                                     "sequence_short", "sequence_gap")) {
-  if (!identical(qc_flag_col, "qc_flag")) {
-    names(data)[names(data) == qc_flag_col] <- "qc_flag"
-  }
-  rb_filter_reference(data, qc_flag = exclude, exact = FALSE)
-}
-
-
-rb_taxonomy <- function(con, species = NULL, qc_flag = "pass", exact = FALSE) {
+rb_taxonomy <- function(con, species = NULL, qc_flag = "pass", exact = FALSE, table_name = "yzfishdb_final") {
   conditions <- rb_sql_conditions(con, species = species, qc_flag = qc_flag, exact = exact)
+  tbl <- DBI::dbQuoteIdentifier(con, table_name)
+  order_col <- DBI::dbQuoteIdentifier(con, "order")
   sql <- paste(
-    "select distinct kingdom, phylum, class, `order`, family, genus, species, occurrence, habitat",
-    "from yzfishdb_final"
+    "select distinct kingdom, phylum, class,", order_col, ", family, genus, species, occurrence, habitat from", tbl
   )
   if (length(conditions) > 0) sql <- paste(sql, "where", paste(conditions, collapse = " and "))
   DBI::dbGetQuery(con, sql)
