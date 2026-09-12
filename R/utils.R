@@ -95,3 +95,30 @@ rb_default_data_file <- function(filename) {
   if (file.exists(local)) return(local)
   ""
 }
+
+#' Standardize column names to the package's internal schema
+#'
+#' @param column_map Named character vector: names(column_map) = the
+#'   standard name expected internally, values = the column name
+#'   actually present in `data`.
+#' @param drop_unmapped If TRUE, only the mapped columns are kept.
+rb_standardize_columns <- function(data, column_map, drop_unmapped = FALSE) {
+  missing_source <- setdiff(unname(column_map), names(data))
+  if (length(missing_source) > 0) {
+    stop("Columns referenced in column_map not found in data: ",
+         paste(missing_source, collapse = ", "), call. = FALSE)
+  }
+
+  for (standard_name in names(column_map)) {
+    source_name <- column_map[[standard_name]]
+    if (!identical(source_name, standard_name)) {
+      names(data)[names(data) == source_name] <- standard_name
+    }
+  }
+
+  if (isTRUE(drop_unmapped)) {
+    data <- data[, names(column_map), drop = FALSE]
+  }
+  data
+}
+
