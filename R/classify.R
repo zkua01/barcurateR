@@ -1,10 +1,6 @@
 # ============================================================
-# MODULE 4 — ML sequence-type classifier (replaces edna_ml_seq_type.R)
-#
-# DESTINATION: R/classify.R (new file). This is a distinct capability
-# (model training + prediction) not represented anywhere else in what
-# you've shown me, so it earns its own file rather than being folded
-# into R/qc.R.
+# MODULE 4 — ML sequence-type classifier: feature extraction, training,
+# and confidence-scored prediction. (replaces edna_ml_seq_type.R) 
 # ============================================================
 
 
@@ -25,8 +21,13 @@
 # fit in memory at once, wrap calls to this function in your own
 # chunking (e.g. split(sequence, ceiling(seq_along(sequence)/5000)))
 # rather than baking batching into the function itself.
-# ------------------------------------------------------------
 
+#' Denominator (gc_count + at_count) deliberately EXCLUDES ambiguous
+#' bases (N and other IUPAC codes) — this is a training-feature
+#' decision, kept as-is regardless of any separate QC-side ambiguity
+#' checks (see rb_check_ambiguous_content() in R/qc.R, which uses full
+#' sequence length instead, for a different purpose).
+# ------------------------------------------------------------
 rb_sequence_features <- function(sequence) {
   seq_upper <- toupper(sequence)
 
@@ -53,17 +54,10 @@ rb_sequence_features <- function(sequence) {
   )
 }
 
-# --- Test ---
-# rb_sequence_features(c("AATTGGCC", "GGGGCCCC"))
-# expect: length = c(8, 8); gc_content = c(0.5, 1.0); at_content = c(0.5, 0.0)
-#
-# rb_sequence_features("")
-# expect: length = 0, all content/skew values = 0 (no divide-by-zero error,
-#         confirms the total_bases > 0 guard still works on an edge case)
 
 
 # ------------------------------------------------------------
-# rb_train_classifier()
+# rb_train_classifier() : train a random forest sequence-type classifier
 # Generalizes Stage 3 (prepare_ml_data) + Stage 4
 # (train_sequence_classifier). `label_col` and `features` are now
 # parameters instead of the hardcoded formula
@@ -72,6 +66,16 @@ rb_sequence_features <- function(sequence) {
 # so a dataset using a completely different marker set (or even a
 # non-marker classification task built on the same feature columns)
 # works unchanged.
+
+#'
+#' @param label_col Column holding class labels — not hardcoded to any
+#'   specific marker set.
+#' @param features Feature columns to use, default the 5 computed by
+#'   rb_sequence_features().
+#'
+#' Requires rsample >= 1.0.0 (relies on `strata` accepting a plain
+#' string). Confirm this version against your actual target
+#' environment and adjust the guard/DESCRIPTION requirement if needed.
 # ------------------------------------------------------------
 
 rb_train_classifier <- function(data, label_col = "seq_type",
@@ -80,6 +84,15 @@ rb_train_classifier <- function(data, label_col = "seq_type",
                                  trees = 500, mtry = 3, min_n = 5,
                                  prop = 0.8, seed = 123) {
   rb_required_columns(data, c(label_col, features))
+
+  if (utils::packageVersion("rsample") < "1.0.0") {
+    stop(
+      "rb_train_classifier() requires rsample >= 1.0.0 (relies on ",
+      "passing `strata` as a plain string). Installed version: ",
+      utils::packageVersion("rsample"), ". Please update rsample.",
+      call. = FALSE
+    )
+  }
 
   data[[label_col]] <- factor(data[[label_col]])
 
@@ -116,68 +129,36 @@ rb_train_classifier <- function(data, label_col = "seq_type",
     metrics = metrics,
     test_results = test_results,
     conf_matrix = conf_matrix,
-    label_col = label_col,          # stored so rb_classify_sequences() knows
-    features = features              # what to expect without re-guessing
+    label_col = label_col,
+    features = features
   )
 }
 
-# --- Test ---
-# set.seed(1)
-# toy <- data.frame(
-#   seq_type = rep(c("markerA", "markerB", "markerC"), each = 20),  # deliberately
-#                                                                     # NOT 12S/16S/COI
-#   length = stats::rnorm(60, 500, 50),
-#   gc_content = stats::runif(60), at_content = stats::runif(60),
-#   gc_skew = stats::runif(60, -1, 1), at_skew = stats::runif(60, -1, 1)
-# )
-# model <- rb_train_classifier(toy, label_col = "seq_type")
-# expect: trains without error; model$test_results has .pred_markerA /
-#         .pred_markerB / .pred_markerC columns (proves classes aren't
-#         hardcoded anywhere in this function)
-
 
 # ------------------------------------------------------------
-# rb_classify_sequences()
+# rb_classify_sequences(): 
+#' Classify sequences using a trained model, with confidence filtering
 # Generalizes Stage 5 (predict_unknown_sequences_with_confidence).
-# THIS IS THE FUNCTION WITH THE CRITICAL BUG — see the BUGFIX comment
-# at the max_prob computation below.
-# ------------------------------------------------------------
 
+#' @param model_result Output of rb_train_classifier().
+#' @param fallback_label Label assigned when confidence is below
+#'   `confidence_threshold` or the sequence is shorter than
+#'   `min_length` (default "other").
+# ------------------------------------------------------------
 rb_classify_sequences <- function(model_result, data, confidence_threshold = 0.8,
                                    min_length = 100, sequence_col = "sequence",
                                    fallback_label = "other") {
   rb_required_columns(data, sequence_col)
 
   fit <- model_result$model
-
-  # Features recomputed via rb_sequence_features() — this also removes
-  # the second, slightly-differently-named copy of the feature-extraction
-  # block that existed in the original predict_unknown_sequences_with_confidence()
-  # (it used `seq_length` as an interim column name where the training-side
-  # block used `length`; both are gone now in favor of the one function).
   features <- rb_sequence_features(data[[sequence_col]])
 
   pred_class <- stats::predict(fit, new_data = features, type = "class")
   pred_prob <- stats::predict(fit, new_data = features, type = "prob")
 
-  # BUGFIX 2026-08-04 (rb_classify_sequences, generalizing
-  # predict_unknown_sequences_with_confidence()):
-  #
-  # Original code:
-  #   max_prob = pmax(.pred_12S, .pred_16S, .pred_COI)
-  #
-  # This hardcodes the three YZFishDB marker class names directly into
-  # the pmax() call. For any dataset whose label_col contains different
-  # class names (e.g. the markerA/markerB/markerC example above, or a
-  # marker set with 4+ classes), the columns .pred_12S/.pred_16S/.pred_COI
-  # simply would not exist in pred_prob — this would throw
-  # "object '.pred_12S' not found" immediately, or worse, silently
-  # succeed with wrong values if similarly-named columns happened to
-  # exist from unrelated code in the same session.
-  #
-  # Fixed to compute the max across EVERY .pred_* column actually
-  # present in pred_prob, so it works for any number or naming of
-  # classes without the caller needing to know or specify them.
+  # max_prob computed across EVERY .pred_* column actually present,
+  # rather than hardcoding class names (e.g. .pred_12S/.pred_16S/
+  # .pred_COI) — required for this to work on any dataset's class set.
   prob_cols <- pred_prob[, grepl("^\\.pred_", names(pred_prob)), drop = FALSE]
   max_prob <- do.call(pmax, prob_cols)
 
@@ -195,19 +176,3 @@ rb_classify_sequences <- function(model_result, data, confidence_threshold = 0.8
     stringsAsFactors = FALSE
   )
 }
-
-# --- Test (regression test for the pmax fix — this is the case that
-#     previously would have errored or silently misbehaved) ---
-# new_data <- data.frame(sequence = c("ACGTACGTACGTACGTACGT"))
-# result <- rb_classify_sequences(model, new_data)
-# expect (after fix): runs without error; confidence_score is the max
-#   across .pred_markerA / .pred_markerB / .pred_markerC
-# BEFORE fix: this call would have thrown
-#   "object '.pred_12S' not found" — the markerA/B/C dataset has no
-#   such column, since the original code hardcoded YZFishDB's own
-#   class names into the pmax() call.
-#
-# Also worth a second regression test confirming a short sequence is
-# always routed to fallback_label regardless of model confidence:
-# rb_classify_sequences(model, data.frame(sequence = "AC"), min_length = 100)
-# expect: final_type == "other" (fallback), prediction_source == "ML_low_confidence"
