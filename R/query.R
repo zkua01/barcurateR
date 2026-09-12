@@ -71,34 +71,59 @@ rb_list_taxa <- function(con, rank = "species", occurrence = NULL, marker = NULL
   DBI::dbGetQuery(con, sql)
 }
 
-rb_filter_reference <- function(data, marker = NULL, source = NULL, occurrence = NULL, min_length = NULL, max_length = NULL, qc_flag = "pass", exact = FALSE) {
+#' Filter a reference data.frame by marker/source/occurrence/length/qc_flag
+rb_filter_reference <- function(data, marker = NULL, source = NULL, occurrence = NULL,
+                                 min_length = NULL, max_length = NULL,
+                                 qc_flag = "pass", exact = FALSE) {
   out <- data
   if (!is.null(marker)) out <- out[out$seq_type %in% marker, , drop = FALSE]
   if (!is.null(source)) out <- out[out$source %in% source, , drop = FALSE]
   if (!is.null(occurrence)) out <- out[out$occurrence %in% occurrence, , drop = FALSE]
-  if (!is.null(qc_flag)){
+  if (!is.null(qc_flag)) {
     qc_flag <- qc_flag[!is.na(qc_flag)]
     keep <- rep(FALSE, nrow(out))
-    for(flag in qc_flag){
-      if(exact){
+    for (flag in qc_flag) {
+      if (exact) {
         keep <- keep | (out$qc_flag == flag)
-      } else{
-        if(identical(flag, "pass")){
+      } else {
+        if (identical(flag, "pass")) {
           keep <- keep | (out$qc_flag == "pass")
         } else {
-          keep <- keep | grepl(flag, out$qcflag, fixed = TRUE)
+          # BUGFIX 2026-08-03: was `out$qcflag` (nonexistent column —
+          # missing underscore) instead of `out$qc_flag`. A nonexistent
+          # column returns NULL, and grepl(flag, NULL) silently returns
+          # logical(0), so `keep <- keep | logical(0)` left `keep`
+          # unchanged with no error thrown. Net effect: every non-exact,
+          # non-"pass" qc_flag exclusion silently did nothing in every
+          # prior call. Fixed to reference the real column, out$qc_flag.
+          keep <- keep | grepl(flag, out$qc_flag, fixed = TRUE)
         }
       }
     }
-    out <- out[keep,,drop=FALSE]
+    out <- out[keep, , drop = FALSE]
   }
-  
+
   seq_len <- nchar(rb_clean_sequence(out$sequence))
   if (!is.null(min_length)) out <- out[seq_len >= min_length, , drop = FALSE]
   if (!is.null(max_length)) out <- out[seq_len <= max_length, , drop = FALSE]
   row.names(out) <- NULL
   out
 }
+
+#' Exclude sequences matching any of a set of QC flags (in-memory filter)
+#'
+#' Thin wrapper around rb_filter_reference() for the common "keep
+#' everything except these flags" case.
+rb_qc_filter <- function(data, qc_flag_col = "qc_flag",
+                         exclude = c("contaminant", "numt", "divergent",
+                                     "frameshifted", "internal_stop",
+                                     "sequence_short", "sequence_gap")) {
+  if (!identical(qc_flag_col, "qc_flag")) {
+    names(data)[names(data) == qc_flag_col] <- "qc_flag"
+  }
+  rb_filter_reference(data, qc_flag = exclude, exact = FALSE)
+}
+
 
 rb_taxonomy <- function(con, species = NULL, qc_flag = "pass", exact = FALSE) {
   conditions <- rb_sql_conditions(con, species = species, qc_flag = qc_flag, exact = exact)
