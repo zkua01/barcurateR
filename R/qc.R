@@ -1,10 +1,11 @@
 # ============================================================
-# MODULE 3 — QC pipeline (replaces edna_ref_qc.R AND edna_ref_qc_p2.R)
-#
-# DESTINATION: R/qc.R (new file). All the QC-stage functions below are
-# grouped together here because they were previously duplicated across
-# two nearly-identical scripts — consolidating them into one file makes
-# that duplication structurally impossible to reintroduce.
+# R/qc.R
+# Full QC pipeline: contaminant/NUMT screening, codon and rRNA
+# integrity checks, genome completeness, divergence detection,
+# ambiguous-content check, flag compilation, and the orchestrator that
+# replaces edna_ref_qc.R AND edna_ref_qc_p2.R (call it twice — once on
+# standardized data, once on ML-classified data).
+# ============================================================
 #
 # Usage after this refactor: call rb_run_qc_pipeline() TWICE —
 #   qc1 <- rb_run_qc_pipeline(standardized_data, blast_db, numt_fasta)
@@ -17,10 +18,7 @@
 
 # ------------------------------------------------------------
 # rb_screen_contaminants()
-# Generalizes run_blast_safe() + the future_map_lgl() apply loop from
-# both scripts. Thresholds that were hardcoded into the blastn command
-# string (-perc_identity 95 -evalue 1e-20) and into the post-hoc filter
-# (pident > 95 & length > 100) are now parameters.
+#' Screen sequences for contaminants via BLASTN against a reference db
 # ------------------------------------------------------------
 
 rb_screen_contaminants <- function(sequences, blast_db, perc_identity = 95,
@@ -70,58 +68,44 @@ rb_screen_contaminants <- function(sequences, blast_db, perc_identity = 95,
   furrr::future_map_lgl(sequences, run_one)
 }
 
-# --- Test ---
-# Requires a tiny local BLAST db to be meaningful; for a unit test that
-# doesn't need BLAST+ installed, stub blast_db with a nonexistent path
-# and confirm the "blastn not found" stop() fires cleanly:
-#
-# testthat::expect_error(
-#   rb_screen_contaminants("ACGT", blast_db = "nope", blastn = "not_a_real_binary"),
-#   "not found"
-# )
-#
-# For a real test with BLAST+ installed: build a 1-sequence contaminant
-# db from a known string, then confirm an identical query sequence
-# screens TRUE and an unrelated random sequence screens FALSE.
-
 
 # ------------------------------------------------------------
 # rb_screen_numts()
-# Generalizes Stage 3's grepl loop. Already dataset-agnostic (any numt
-# fasta, any source organism) — main change is graceful handling of a
-# missing file (warning + all-FALSE) instead of the caller having to
-# set ref_db$is_numt <- FALSE manually.
+                     
+#' Screen sequences for NUMT contamination (query found within a
+#' known NUMT reference)
+#'
+#' @param min_match_length Sequences shorter than this are always
+#'   screened as FALSE — a short query can match a long reference by
+#'   chance. Validate the false-positive rate on known-clean sequences
+#'   before trusting this in production; the right threshold depends
+#'   on your marker length and reference set.
 # ------------------------------------------------------------
 
-rb_screen_numts <- function(sequences, numt_fasta) {
+rb_screen_numts <- function(sequences, numt_fasta, min_match_length = 50) {
   if (is.null(numt_fasta) || !file.exists(numt_fasta)) {
-    warning("NUMT reference file not found: ", numt_fasta, " — screening skipped.",
-            call. = FALSE)
+    warning("NUMT reference file not found: ", numt_fasta, " — screening skipped.", call. = FALSE)
     return(rep(FALSE, length(sequences)))
   }
-  numt_seqs <- unique(unlist(seqinr::read.fasta(numt_fasta, seqonly = TRUE)))
+  numt_seqs <- toupper(unique(unlist(seqinr::read.fasta(numt_fasta, seqonly = TRUE))))
+
+  # Direction: is the (short) QUERY found within a (long) NUMT
+  # reference — not the reverse, since NUMT references built from
+  # chromosome/scaffold/genome-scale Entrez hits are far larger than
+  # any marker-length query and could never contain it the other way.
   vapply(sequences, function(seq) {
-    any(vapply(numt_seqs, function(numt) grepl(numt, seq, fixed = TRUE), logical(1)))
+    seq_upper <- toupper(seq)
+    if (nchar(seq_upper) < min_match_length) {
+      return(FALSE)
+    }
+    any(vapply(numt_seqs, function(numt) grepl(seq_upper, numt, fixed = TRUE), logical(1)))
   }, logical(1), USE.NAMES = FALSE)
 }
-
-# --- Test ---
-# tmp <- tempfile(fileext = ".fasta")
-# writeLines(c(">numt1", "AAAACCCC"), tmp)
-# rb_screen_numts(c("AAAACCCC", "GGGGTTTT"), tmp)
-# expect: c(TRUE, FALSE)
-#
-# rb_screen_numts(c("AAAA"), numt_fasta = "does_not_exist.fasta")
-# expect: a warning, and result FALSE (not an error)
 
 
 # ------------------------------------------------------------
 # rb_check_codons()
-# Generalizes check_codon_integrity(). `coding_genes` and `genetic_code`
-# were hardcoded (gene %in% c("COI","complete_genome"),
-# genetic.code = "VertebrateMitochondrial") — both now parameters, so a
-# dataset using a different genetic code (e.g. invertebrates, plants)
-# or a different set of coding-gene labels works unchanged.
+#' Check COI/genome sequences for internal stop codons and frameshifts
 # ------------------------------------------------------------
 
 rb_check_codons <- function(sequence, gene, coding_genes = c("COI", "complete_genome"),
@@ -152,25 +136,10 @@ rb_check_codons <- function(sequence, gene, coding_genes = c("COI", "complete_ge
   }, error = function(e) list(has_stop = NA, frameshifted = NA, best_frame = NA))
 }
 
-# --- Test ---
-# rb_check_codons("ATGGCTTAA", gene = "COI")
-# expect: has_stop = TRUE (TAA is a stop codon)
-#
-# rb_check_codons("ATGGCTGCT", gene = "COI")
-# expect: has_stop = FALSE
-#
-# rb_check_codons("ATGGCTGCT", gene = "16S")
-# expect: list(NA, NA, NA) — 16S isn't in the default coding_genes
-#
-# rb_check_codons("ATGGCTTAA", gene = "COI",
-#                  coding_genes = "COI", genetic_code = "Standard")
-# expect: runs with the Standard genetic code instead of VertebrateMitochondrial
-
 
 # ------------------------------------------------------------
 # rb_check_rrna_integrity()
-# Generalizes check_rrna_integrity(). `rrna_genes` and `min_length`
-# (previously hardcoded 100) are now parameters.
+ #' Check 12S/16S sequences for length and gap issues
 # ------------------------------------------------------------
 
 rb_check_rrna_integrity <- function(sequence, gene, rrna_genes = c("12S", "16S"),
@@ -182,22 +151,9 @@ rb_check_rrna_integrity <- function(sequence, gene, rrna_genes = c("12S", "16S")
   )
 }
 
-# --- Test ---
-# rb_check_rrna_integrity("ACGT", gene = "12S")
-# expect: has_short = TRUE (4 bp < 100)
-#
-# rb_check_rrna_integrity(strrep("ACGT", 50), gene = "12S")
-# expect: has_short = FALSE (200 bp)
-#
-# rb_check_rrna_integrity("ACGT", gene = "12S", min_length = 2)
-# expect: has_short = FALSE — confirms min_length is actually used
-
-
 # ------------------------------------------------------------
 # rb_check_genome_completeness()
-# Generalizes Stage 6. `required_genes` (previously hardcoded to
-# has_coi/has_12s) and `genome_gene` label are now parameters — a
-# COI-only marker study, for example, doesn't need a 12S column at all.
+#' Flag complete genomes missing required marker genes
 # ------------------------------------------------------------
 
 rb_check_genome_completeness <- function(data, required_genes = c("COI", "12S"),
@@ -221,24 +177,10 @@ rb_check_genome_completeness <- function(data, required_genes = c("COI", "12S"),
   data
 }
 
-# --- Test ---
-# toy <- data.frame(species = c("sp1","sp1"), gene = c("complete_genome","COI"))
-# rb_check_genome_completeness(toy, required_genes = "COI")
-# expect: genome_flag is NA for both rows (COI alone satisfies the requirement)
-#
-# toy2 <- data.frame(species = c("sp1"), gene = c("complete_genome"))
-# rb_check_genome_completeness(toy2, required_genes = c("COI","12S"))
-# expect: genome_flag = "missing_genes" (neither COI nor 12S present)
-
-
 # ------------------------------------------------------------
 # rb_check_divergence()
-# Generalizes check_divergence_safe() + its group_modify() driver.
-# Species/gene grouping was already data-driven (no hardcoded names);
-# the outlier thresholds (5x median, 0.02 floor) are now parameters.
-# Tool availability (mafft/FastTree) is checked inside this function
-# rather than once at the top of a script, so the function is
-# self-contained and independently testable.
+#' Detect phylogenetically divergent (likely mislabeled) sequences
+#' within each species/gene group via MAFFT + FastTree
 # ------------------------------------------------------------
 
 rb_check_divergence <- function(data, species_col = "species", gene_col = "gene",
@@ -311,32 +253,30 @@ rb_check_divergence <- function(data, species_col = "species", gene_col = "gene"
   merge(data, results, by = id_col, all.x = TRUE)
 }
 
-# --- Test ---
-# testthat::skip_if_not(nzchar(Sys.which("mafft")) && nzchar(Sys.which("FastTree")))
-# toy <- data.frame(
-#   species = rep("sp1", 6), gene = rep("COI", 6),
-#   unique_code = paste0("seq_", 1:6),
-#   sequence = c(rep("ACGTACGTACGT", 5), "TTTTTTTTTTTT")  # 1 clear outlier
-# )
-# result <- rb_check_divergence(toy, min_seqs = 5)
-# expect: the outlier sequence flagged div_result == "divergent",
-#         the other 5 flagged "pass"
-#
-# Also confirm min_seqs is respected:
-# rb_check_divergence(toy[1:3, ], min_seqs = 5)
-# expect: all div_result == "insufficient_data" (below min_seqs threshold)
-
+#' Flag sequences with excessive ambiguous-base content (N + other
+#' IUPAC codes), based on FULL sequence length
+#'
+#' Deliberately separate from rb_sequence_features() (R/classify.R),
+#' whose GC/AT content calculation excludes ambiguous bases from its
+#' denominator by design (a training-feature decision) rather than
+#' penalizing for them. This is a QC-oriented check, not a feature.
+rb_check_ambiguous_content <- function(sequence, max_n_fraction = 0.1) {
+  seq_upper <- toupper(sequence)
+  total_length <- nchar(seq_upper)
+  acgt_count <- stringr::str_count(seq_upper, "[ACGT]")
+  ambiguous_fraction <- ifelse(total_length > 0, 1 - (acgt_count / total_length), 0)
+  ambiguous_fraction > max_n_fraction
+}
 
 # ------------------------------------------------------------
 # rb_compile_qc_flags()
-# Generalizes Stage 8's rowwise flag builder. Simple logical-column
-# flags (contaminant/numt/internal_stop/frameshifted/sequence_short/
-# sequence_gap) are driven by the `checks` named list instead of being
-# hardcoded `if` statements. Flags that depend on VALUE matching rather
-# than a plain logical column (genome_flag == "missing_genes",
-# div_result == "divergent", gene == "other") are handled by an
-# optional `extra_flag_fn` callback, so a user can register new
-# value-based flags without editing this function's body.
+#' Compile per-sequence QC flags from a set of logical check columns
+#' plus optional value-based extra flags
+#'
+#' @param checks Named list: flag name -> logical column name in `data`.
+#' @param extra_flag_fn Optional `function(data) -> character vector`
+#'   for flags that depend on value matching rather than a plain
+#'   logical column (e.g. genome_flag == "missing_genes").
 # ------------------------------------------------------------
 
 rb_compile_qc_flags <- function(data,
@@ -349,12 +289,17 @@ rb_compile_qc_flags <- function(data,
                                    sequence_gap = "has_gaps"
                                  ),
                                  extra_flag_fn = NULL) {
-  flag_matrix <- vapply(names(checks), function(flag_name) {
+  flag_vec <- vapply(names(checks), function(flag_name) {
     col <- checks[[flag_name]]
     if (!col %in% names(data)) return(rep(FALSE, nrow(data)))
     val <- data[[col]]
     ifelse(is.na(val), FALSE, as.logical(val))
   }, logical(nrow(data)))
+
+  # Unconditional reshape to matrix — handles length(checks) == 1 (where
+  # vapply would otherwise return a bare vector) identically to > 1.
+  flag_matrix <- matrix(flag_vec, nrow = nrow(data), ncol = length(checks),
+                         dimnames = list(NULL, names(checks)))
 
   qc_flag <- apply(flag_matrix, 1, function(row) {
     hit <- names(checks)[row]
@@ -375,27 +320,18 @@ rb_compile_qc_flags <- function(data,
   data
 }
 
-# --- Test ---
-# toy <- data.frame(is_contaminant = c(TRUE, FALSE), is_numt = c(FALSE, FALSE),
-#                    has_stop = c(FALSE, FALSE), frameshifted = c(FALSE, FALSE),
-#                    has_short = c(FALSE, FALSE), has_gaps = c(FALSE, FALSE))
-# rb_compile_qc_flags(toy)$qc_flag
-# expect: c("contaminant", "pass")
-#
-# extra_fn <- function(d) ifelse(d$special == "yes", "manual_review_needed", "")
-# rb_compile_qc_flags(toy, extra_flag_fn = extra_fn) # with a `special` col added
-# expect: extra flag appended (comma/pipe-joined) only where extra_fn returns non-empty
-
 
 # ------------------------------------------------------------
 # rb_run_qc_pipeline()
-# THE key consolidation: this orchestrator replaces the ENTIRE body of
-# BOTH edna_ref_qc.R and edna_ref_qc_p2.R. Call it twice in user code —
-# once on standardized data, once after ML classification — instead of
-# maintaining two ~300-line scripts that drift out of sync with each
-# other (as they had already started to: p2 has minor formatting/order
-# differences from the original even though the logic is meant to be
-# identical).
+           
+#' Run the full QC pipeline (replaces edna_ref_qc.R AND edna_ref_qc_p2.R)
+#'
+#' Call this twice in user code — once on standardized data, once on
+#' ML-classified data — rather than maintaining two separate scripts.
+#'
+#' @param parallel_workers Shared parallelism switch for contaminant
+#'   screening AND the codon/rRNA integrity checks (serial when 1,
+#'   furrr-parallel otherwise).
 # ------------------------------------------------------------
 
 rb_run_qc_pipeline <- function(data, blast_db, numt_fasta = NULL,
@@ -408,6 +344,14 @@ rb_run_qc_pipeline <- function(data, blast_db, numt_fasta = NULL,
                                 genome_gene = "complete_genome") {
   rb_required_columns(data, c(species_col, gene_col, sequence_col, id_col))
   data[[sequence_col]] <- rb_clean_sequence(data[[sequence_col]])
+
+  if (parallel_workers > 1) {
+    future::plan(future::multisession, workers = parallel_workers)
+    on.exit(future::plan(future::sequential), add = TRUE)
+    map2_fn <- furrr::future_map2
+  } else {
+    map2_fn <- purrr::map2
+  }
 
   message(">>> Screening contaminants")
   data$is_contaminant <- rb_screen_contaminants(
@@ -422,14 +366,14 @@ rb_run_qc_pipeline <- function(data, blast_db, numt_fasta = NULL,
   }
 
   message(">>> Checking codon integrity")
-  codon <- Map(function(seq, gene) rb_check_codons(seq, gene, coding_genes = coding_genes),
-               data[[sequence_col]], data[[gene_col]])
+  codon <- map2_fn(data[[sequence_col]], data[[gene_col]],
+                    function(seq, gene) rb_check_codons(seq, gene, coding_genes = coding_genes))
   data$has_stop <- vapply(codon, function(x) isTRUE(x$has_stop), logical(1))
   data$frameshifted <- vapply(codon, function(x) isTRUE(x$frameshifted), logical(1))
 
   message(">>> Checking rRNA integrity")
-  rrna <- Map(function(seq, gene) rb_check_rrna_integrity(seq, gene, rrna_genes = rrna_genes),
-              data[[sequence_col]], data[[gene_col]])
+  rrna <- map2_fn(data[[sequence_col]], data[[gene_col]],
+                   function(seq, gene) rb_check_rrna_integrity(seq, gene, rrna_genes = rrna_genes))
   data$has_short <- vapply(rrna, function(x) isTRUE(x$has_short), logical(1))
   data$has_gaps <- vapply(rrna, function(x) isTRUE(x$has_gaps), logical(1))
 
@@ -461,14 +405,3 @@ rb_run_qc_pipeline <- function(data, blast_db, numt_fasta = NULL,
   rb_compile_qc_flags(data, extra_flag_fn = extra_fn)
 }
 
-# --- Test ---
-# End-to-end smoke test on ~10 synthetic sequences with a tiny fabricated
-# blast_db (built from an unrelated organism) and no numt_fasta, on a
-# NON-fish, NON-YZFishDB dataset — confirms:
-#   1. it runs without any fish-specific column or species assumptions
-#   2. output always has a qc_flag column with "pass" for clean input
-#   3. calling it twice (pass 1, then again on the same data as a stand-in
-#      for the ML-classified pass 2) produces identical qc_flag values —
-#      this is the regression test that proves the two-script duplication
-#      has actually been eliminated, since both calls now run the exact
-#      same code path.
