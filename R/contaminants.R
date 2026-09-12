@@ -1,7 +1,25 @@
-
+# ============================================================
+# R/contaminants.R
+# Contaminant reference database building (NCBI fetch + BLAST db build).
+# ============================================================
  
 # ------------------------------------------------------------
 # rb_build_contaminant_db()
+
+#' Build contaminant reference FASTAs from an organisms table
+#'
+#' @param organisms Data frame with columns:
+#'   - type: "accession" (direct entrez_fetch) or "query" (entrez_search
+#'     then fetch)
+#'   - category: output grouping (e.g. "reference_contaminant",
+#'     "lab_contaminant", "numt_source") — becomes the output filename
+#'   - value: the accession ID (type = "accession") or NCBI search
+#'     query string (type = "query")
+#' @param requests_per_second Fixed-interval throttle between NCBI
+#'   requests (unauthenticated E-utilities cap is ~3/sec).
+#' @return Named character vector of output FASTA paths, one per
+#'   category.
+
 # Generalizes all 3 hardcoded blocks (human mtDNA via a fixed
 # accession, fish NUMT source organisms via a fixed Entrez query, lab
 # bacteria via another fixed query) into one function driven by an
@@ -12,16 +30,19 @@
 # in a caller-supplied table, not 3 hardcoded code paths.
 # ------------------------------------------------------------
  
-rb_build_contaminant_db <- function(organisms, out_dir, retmax = 200) {
+rb_build_contaminant_db <- function(organisms, out_dir, retmax = 200,
+                                     requests_per_second = 3) {
   rb_required_columns(organisms, c("type", "category", "value"))
   dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
- 
+
+  min_interval <- 1 / requests_per_second
   fetched <- list()
- 
+
   for (i in seq_len(nrow(organisms))) {
     row <- organisms[i, ]
     message(sprintf("Fetching %s (%s: %s)...", row$category, row$type, row$value))
- 
+    request_start <- Sys.time()
+
     seqs <- if (identical(row$type, "accession")) {
       tryCatch(
         rentrez::entrez_fetch(db = "nuccore", id = row$value, rettype = "fasta"),
@@ -53,12 +74,17 @@ rb_build_contaminant_db <- function(organisms, out_dir, retmax = 200) {
     } else {
       stop("Unknown organism `type`: '", row$type, "' (expected 'accession' or 'query')", call. = FALSE)
     }
- 
+
     if (!is.null(seqs)) {
       fetched[[row$category]] <- c(fetched[[row$category]], seqs)
     }
+
+    elapsed <- as.numeric(difftime(Sys.time(), request_start, units = "secs"))
+    if (elapsed < min_interval && i < nrow(organisms)) {
+      Sys.sleep(min_interval - elapsed)
+    }
   }
- 
+
   out_paths <- character(0)
   for (category in names(fetched)) {
     path <- file.path(out_dir, paste0(category, ".fasta"))
@@ -69,36 +95,17 @@ rb_build_contaminant_db <- function(organisms, out_dir, retmax = 200) {
   out_paths
 }
  
-# --- Test ---
-# NOTE: requires network access + rentrez, and can't be fully offline-tested
-# without mocking entrez_fetch/entrez_search. For CI, wrap these calls
-# behind an injectable `fetcher`/`searcher` argument if you want a fully
-# mockable unit test — flag if you'd like that added.
-#
-# Structural test (offline, using an organisms table with deliberately
-# NON-fish, NON-YZFishDB categories):
-#
-# orgs <- data.frame(
-#   type     = c("accession", "query"),
-#   category = c("reference_contaminant", "lab_contaminant"),
-#   value    = c("NC_012920.1", "Escherichia coli[ORGN] AND 16S[GENE]"),
-#   stringsAsFactors = FALSE
-# )
-# paths <- rb_build_contaminant_db(orgs, out_dir = tempdir())
-# expect: paths named "reference_contaminant" and "lab_contaminant"
-#         (not "human_mtDNA"/"lab_bacteria" — proves category naming
-#         isn't hardcoded), each pointing at a real fasta file
-#
-# Also test the unknown-type error path (no network needed):
-# testthat::expect_error(
-#   rb_build_contaminant_db(data.frame(type = "bogus", category = "x", value = "y"),
-#                            out_dir = tempdir()),
-#   "Unknown organism"
-# )
  
  
 # ------------------------------------------------------------
 # rb_build_blast_db()
+#' Combine FASTA files and build a nucleotide BLAST database
+#'
+#' @param fasta_paths Character vector of FASTA file paths to combine.
+#' @param stream_combine If TRUE, combines files via chunked
+#'   file-to-file streaming instead of loading them fully into R
+#'   memory — recommended for large/user-supplied contaminant sets.
+
 # Generalizes Stage 4's makeblastdb system call. `fasta_paths` is now a
 # list instead of the 2 hardcoded files (human_mtDNA.fasta +
 # lab_bacteria.fasta) — the caller decides which of
@@ -108,7 +115,7 @@ rb_build_contaminant_db <- function(organisms, out_dir, retmax = 200) {
 # ------------------------------------------------------------
  
 rb_build_blast_db <- function(fasta_paths, out_prefix, title = "Contaminant Database",
-                               makeblastdb = "makeblastdb") {
+                               makeblastdb = "makeblastdb", stream_combine = FALSE) {
   if (!nzchar(Sys.which(makeblastdb))) {
     stop("makeblastdb executable not found: ", makeblastdb, call. = FALSE)
   }
@@ -116,13 +123,27 @@ rb_build_blast_db <- function(fasta_paths, out_prefix, title = "Contaminant Data
   if (length(missing_files) > 0) {
     stop("Missing input FASTA file(s): ", paste(missing_files, collapse = ", "), call. = FALSE)
   }
- 
+
   combined_path <- paste0(out_prefix, "_combined.fasta")
   dir.create(dirname(combined_path), recursive = TRUE, showWarnings = FALSE)
- 
-  contents <- unlist(lapply(fasta_paths, readLines))
-  writeLines(contents, combined_path)
- 
+
+  if (isTRUE(stream_combine)) {
+    out_con <- file(combined_path, open = "wb")
+    on.exit(close(out_con), add = TRUE)
+    for (path in fasta_paths) {
+      in_con <- file(path, open = "rb")
+      repeat {
+        chunk <- readBin(in_con, "raw", n = 1e7)
+        if (length(chunk) == 0) break
+        writeBin(chunk, out_con)
+      }
+      close(in_con)
+    }
+  } else {
+    contents <- unlist(lapply(fasta_paths, readLines))
+    writeLines(contents, combined_path)
+  }
+
   blast_cmd <- paste(
     makeblastdb,
     "-in", shQuote(combined_path),
@@ -134,7 +155,7 @@ rb_build_blast_db <- function(fasta_paths, out_prefix, title = "Contaminant Data
   if (result != 0) {
     stop("BLAST database creation failed. Ensure BLAST+ tools are installed and in PATH.", call. = FALSE)
   }
- 
+
   db_files <- list.files(dirname(out_prefix),
                           pattern = paste0("^", basename(out_prefix), "\\..+$"),
                           full.names = TRUE)
@@ -143,16 +164,3 @@ rb_build_blast_db <- function(fasta_paths, out_prefix, title = "Contaminant Data
   }
   out_prefix
 }
- 
-# --- Test ---
-# testthat::skip_if_not(nzchar(Sys.which("makeblastdb")))
-# f1 <- tempfile(fileext = ".fasta"); writeLines(c(">a", "ACGTACGT"), f1)
-# f2 <- tempfile(fileext = ".fasta"); writeLines(c(">b", "TTTTGGGG"), f2)
-# prefix <- file.path(tempdir(), "test_db")
-# rb_build_blast_db(list(f1, f2), out_prefix = prefix, title = "Test DB")
-# expect: prefix.nhr / .nin / .nsq (or newer BLAST+ equivalents) created
-#
-# testthat::expect_error(
-#   rb_build_blast_db("does_not_exist.fasta", out_prefix = prefix),
-#   "Missing input FASTA"
-# )
