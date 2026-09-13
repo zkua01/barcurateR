@@ -95,3 +95,84 @@ rb_default_data_file <- function(filename) {
   if (file.exists(local)) return(local)
   ""
 }
+
+# ------------------------------------------------------------
+# rb_standardize_columns()
+#
+# Renames raw source columns to standardized column names.
+#
+# column_map should be of the form:
+#   c(standard_name = "raw_name")
+#
+# Example:
+#   c(
+#     sequence_id = "accession",
+#     species = "scientific_name",
+#     sequence = "sequence"
+#   )
+# ------------------------------------------------------------
+
+rb_standardize_columns <- function(raw, column_map) {
+  if (is.null(raw) || ncol(raw) == 0) {
+    return(raw)
+  }
+  
+  if (is.null(column_map) || length(column_map) == 0) {
+    return(raw)
+  }
+  
+  # Allow named lists as well as named character vectors.
+  if (is.list(column_map)) {
+    column_map <- unlist(column_map, use.names = TRUE)
+  }
+  
+  # Capture names before any further coercion.
+  map_names <- names(column_map)
+  map_values <- unname(column_map)
+  
+  if (
+    is.null(map_names) ||
+    length(map_names) != length(map_values) ||
+    any(!nzchar(map_names))
+  ) {
+    stop(
+      "column_map must be a named vector: c(standard_name = \"raw_name\").",
+      call. = FALSE
+    )
+  }
+  
+  if (anyDuplicated(map_names)) {
+    stop("column_map names must be unique.", call. = FALSE)
+  }
+  
+  map_values <- as.character(map_values)
+  names(map_values) <- map_names
+  
+  missing_raw_columns <- setdiff(map_values, names(raw))
+  
+  if (length(missing_raw_columns) > 0) {
+    stop(
+      "column_map refers to column(s) not present in the raw data: ",
+      paste(missing_raw_columns, collapse = ", "),
+      call. = FALSE
+    )
+  }
+  
+  out <- raw
+  
+  for (standard_name in map_names) {
+    raw_name <- map_values[[standard_name]]
+    
+    if (!identical(raw_name, standard_name)) {
+      out[[standard_name]] <- out[[raw_name]]
+    }
+  }
+  
+  # Drop original raw columns that were renamed, unless they already
+  # have the standardized name.
+  columns_to_drop <- setdiff(map_values, map_names)
+  
+  out <- out[, setdiff(names(out), columns_to_drop), drop = FALSE]
+  
+  out
+}
