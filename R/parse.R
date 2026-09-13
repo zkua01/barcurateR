@@ -18,14 +18,16 @@
 
 rb_default_marker_patterns <- function() {
   list(
-    "12S" = "12s|mt-rnr1",
-    "16S" = "16s|mt-rnr2",
-    "COI" = "coi|co1|cox1|cytochrome c oxidase subunit"
+    "12S" = "12s|mt-rnr1|12s ribosomal rna",
+    "16S" = "16s|mt-rnr2|16s ribosomal rna",
+    "COI" = "coi|co1|cox1|cox i|cox1|cytochrome c oxidase subunit i|cytochrome c oxidase subunit i|cytochrome oxidase subunit i",
+    "CYTB" = "cytb|cytochrome b|mt-cytb",
+    "18S" = "18s|18s ribosomal rna|18s rrna"
   )
 }
 
 #' rb_extract_markers
-Extract marker type + completeness from a sequence description#'
+#' Extract marker type + completeness from a sequence description
 #' @param description Free-text sequence description (e.g. a GenBank
 #'   definition line).
 #' @param marker_patterns Named list mapping marker name -> detection
@@ -45,26 +47,26 @@ rb_extract_markers <- function(description,
                                   "complete.*partial|complete.*complete|rrna.*rrna|",
                                   "rrna.*trna|trna.*rrna"
                                 ),
-                                other_gene_pattern = "trna|transfer rna|cytb|nd[0-9]|atp[0-9]|nad[0-9]") {
+                                other_gene_pattern = "trna|transfer rna|nd[0-9]|atp[0-9]|nad[0-9]") {
+  if(length(description) != 1 || is.na(description) || !nzchar(description)){
+    return("other_unknown")
+  }
+  
   desc_lower <- tolower(description)
 
   if (stringr::str_detect(desc_lower, genome_pattern)) {
     return("genome_complete")
   }
 
-
-    #   detect_completeness
-  Adjacency-checked completeness (used only in the multi-gene branch,
-  # matching the original script). marker_pattern is wrapped in a
-  # non-capturing group before being combined with ".*partial|partial.*"
-  # etc., since marker_pattern may itself be an alternation (e.g.
-  # "12s|mt-rnr1") — without the grouping this expands into unrelated
-  # independent alternatives instead of "(12s or mt-rnr1) adjacent to
-  # partial".
   detect_completeness <- function(marker_pattern) {
-    if (stringr::str_detect(desc_lower, paste0(marker_pattern, ".*partial|partial.*", marker_pattern))) {
+    p <- paste0("(?:", marker_pattern, ")")
+    
+    partial_regex <- paste0(p, ".*partial|partial.*", p)
+    complete_regex <- paste0(p, ".*complete|complete.*", p)
+    
+    if (stringr::str_detect(desc_lower, partial_regex)) {
       "partial"
-    } else if (stringr::str_detect(desc_lower, paste0(marker_pattern, ".*complete|complete.*", marker_pattern))) {
+    } else if (stringr::str_detect(desc_lower, complete_regex)) {
       "complete"
     } else {
       "unknown"
@@ -72,28 +74,15 @@ rb_extract_markers <- function(description,
   }
 
   is_multi_gene <- stringr::str_detect(desc_lower, multi_gene_pattern)
+  
   present_markers <- names(marker_patterns)[
     vapply(marker_patterns, function(p) stringr::str_detect(desc_lower, p), logical(1))
   ]
 
-  # BEHAVIOR CHANGE (not a pure extraction) — flagging for your review:
-  # The original script's "has_other_genes" check additionally required
-  # (target_count == 0 || length(markers) < target_count), where
-  # target_count was a total pattern-hit count computed by
-  # count_target_patterns() across ALL markers' patterns combined into
-  # one flat vector. In practice this extra condition mostly just
-  # re-confirmed what the trna/cytb/nd/atp/nad check already signaled —
-  # it doesn't discriminate additional real cases in the sample
-  # descriptions I can see. I've dropped it here in favor of just the
-  # direct signal (presence of other-gene terms), since carrying
-  # target_count forward as a generalized parameter would add
-  # complexity without a clear generalizable meaning. If you find
-  # NCBI/BOLD descriptions where this mattered, let me know the case
-  # and I'll reinstate an equivalent count-based parameter.
     if (is_multi_gene) {
     markers <- character(0)
     for (marker_name in present_markers) {
-      comp <- detect_completeness_adjacent(marker_patterns[[marker_name]])
+      comp <- detect_completeness(marker_patterns[[marker_name]])
       markers <- c(markers, paste0(marker_name, "_", comp))
     }
     has_other <- stringr::str_detect(desc_lower, other_gene_pattern)
@@ -107,14 +96,9 @@ rb_extract_markers <- function(description,
     return("other_unknown")
   }
 
-  # Single-marker branch: first present marker in list order;
-  # completeness by plain presence of "partial"/"complete" anywhere in
-  # the description (not adjacency-checked, matching original).
   if (length(present_markers) > 0) {
     marker_name <- present_markers[[1]]
-    comp <- if (stringr::str_detect(desc_lower, "partial")) "partial"
-            else if (stringr::str_detect(desc_lower, "complete")) "complete"
-            else "unknown"
+    comp <- detect_completeness(marker_patterns[[marker_name]])
     return(paste0(marker_name, "_", comp))
   }
 
@@ -232,9 +216,9 @@ rb_combine_sources <- function(source_list, species_col = "species", sequence_co
 
 rb_resolve_ambiguous <- function(data, species_col = "species", sequence_col = "sequence",
                                   resolution_table = NULL,
-                                  on_unresolved = c("stop", "warn", "drop"),
+                                  on_unresolved = "stop",
                                   flag_output_path = NULL) {
-  on_unresolved <- rb_match_arg(on_unresolved, c("stop", "warn", "drop"))
+  on_unresolved <- rb_match_arg(on_unresolved, c("stop","warn","drop"))
 
   dup_check <- data %>%
     dplyr::group_by(.data[[sequence_col]]) %>%
@@ -262,6 +246,40 @@ rb_resolve_ambiguous <- function(data, species_col = "species", sequence_col = "
   }
 
   # resolution_table expected to carry an `action` column: "keep" or "combine"
+  if(!"action" %in% names(resolution_table)){
+    stop("resolution_table must contain an 'action' column.", call.=FALSE)
+  }
+  action_normalized <- tolower(trimws(as.character(resolution_table$action)))
+  
+  action_normalized[is.na(action_normalized) | action_normalized == ""] <- "drop"
+  action_normalized[!action_normalized %in% c("keep","combine","drop")] <- "drop"
+  resolution_table$action <- action_normalized
+  
+  action_counts <- table(
+    factor(resolution_table$action, levels = c("keep", "combine", "drop"))
+  )
+  
+  if (action_counts[["drop"]] > 0) {
+    warning(
+      sprintf(
+        "Dropped %d resolution row(s) because action was missing, blank, or 'drop'. Action counts: keep = %d, combine = %d, drop/blank = %d.",
+        action_counts[["drop"]],
+        action_counts[["keep"]],
+        action_counts[["combine"]],
+        action_counts[["drop"]]
+      ),
+      call. = FALSE
+    )
+  } else {
+    message(
+      sprintf(
+        "Resolution table action counts: keep = %d, combine = %d.",
+        action_counts[["keep"]],
+        action_counts[["combine"]]
+      )
+    )
+  }
+  
   keep_rows <- resolution_table[resolution_table$action == "keep", , drop = FALSE]
   keep_rows$action <- NULL
 
