@@ -136,21 +136,4 @@ The \code{assignment_status} column classifies the result:
 
 For ties, the \code{tie_taxa} column contains a pipe-separated (\code{|}) string of the tied species names (e.g., \code{"Species A|Species B"}). If there is no tie, this column is \code{NA}.
 }
-\examples{
-con <- rb_connect()
-refs <- head(rb_get_sequences(con, marker = "12S"), 1)
-asv <- tempfile(fileext = ".fasta")
-writeLines(c(">ASV_001", refs$sequence[[1]]), asv)
-
-# Run exact assignment
-assignment <- rb_assign_edna(asv, con = con, marker = "12S", method = "exact")
-assignment
-
-#Build species matrix
-counts <- data.frame(asv_id = "ASV_001", sample_a = 10, sample_b = 2)
-rb_build_species_matrix(assignment, counts)
-
-rb_disconnect(con)
-
-}
 \concept{taxonomic assignment}

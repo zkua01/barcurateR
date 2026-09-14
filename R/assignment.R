@@ -55,22 +55,6 @@
 #' 
 #' For ties, the `tie_taxa` column contains a pipe-separated (`|`) string of the tied species names (e.g., `"Species A|Species B"`). If there is no tie, this column is `NA`.
 #' 
-#' @examples
-#' con <- rb_connect()
-#' refs <- head(rb_get_sequences(con, marker = "12S"), 1)
-#' asv <- tempfile(fileext = ".fasta")
-#' writeLines(c(">ASV_001", refs$sequence[[1]]), asv)
-#' 
-#' # Run exact assignment
-#' assignment <- rb_assign_edna(asv, con = con, marker = "12S", method = "exact")
-#' assignment
-#' 
-#' #Build species matrix
-#' counts <- data.frame(asv_id = "ASV_001", sample_a = 10, sample_b = 2)
-#' rb_build_species_matrix(assignment, counts)
-#' 
-#' rb_disconnect(con)
-#' 
 #' @name rb_assignment
 #' @family taxonomic assignment
 NULL
