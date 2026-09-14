@@ -135,14 +135,18 @@ rb_diagnostic_sites <- function(focal_seqs, other_seqs, min_freq = 0.9, max_othe
 #' @noRd
 rb_string_dist <- function(x, method = "hamming") {
   if (requireNamespace("pwalign", quietly = TRUE)) {
-    return(pwalign::stringDist(x, method = method))
+    fn <- utils::getFromNamespace("stringDist", "pwalign")
+    return(fn(x, method = method))
   }
   
   if (requireNamespace("Biostrings", quietly = TRUE)) {
-    biostrings_version <- utils::packageVersion("Biostrings")
+    fn <- tryCatch(
+      utils::getFromNamespace("stringDist", "Biostrings"),
+      error = function(e) NULL
+    )
     
-    if (biostrings_version < "2.77.1") {
-      return(Biostrings::stringDist(x, method = method))
+    if (!is.null(fn)) {
+      return(fn(x, method = method))
     }
   }
   
