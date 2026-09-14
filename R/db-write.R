@@ -1,22 +1,88 @@
-# ============================================================
-# MODULE — SQLite database writing
-#
-# DESTINATION: R/db-write.R
-#
-# This module writes curated reference data, QC results, and
-# barcode gap metrics into a SQLite database.
-#
-# It deliberately does not implement the original final
-# filtering step. Downstream filtering can be handled by
-# rb_get_sequences(), rb_filter_reference(), and export
-# functions.
-# ============================================================
+#' Write curated reference data to a SQLite database
+#'
+#' @description
+#' Functions to write curated reference sequences, QC results, barcode gap
+#' metrics, and ambiguity records into a SQLite database. These functions
+#' do **not** filter data — downstream filtering is handled by
+#' [rb_get_sequences()], [rb_filter_reference()], and export functions.
+#'
+#' * `rb_build_reference_db()`: One-step builder that creates a new SQLite
+#'   file and writes all supplied tables in a single call.
+#' * `rb_write_reference_table()`: Writes the main reference sequence table.
+#' * `rb_write_qc_table()`: Writes the QC flag table.
+#' * `rb_write_barcode_gap_table()`: Writes barcode gap metrics.
+#' * `rb_write_ambiguity_table()`: Writes the pre-QC ambiguity archive.
+#'
+#' @param path Path to the SQLite database file to create or overwrite.
+#' @param con A `DBIConnection` object to an open SQLite database.
+#' @param data A data frame to write to the database.
+#' @param reference_data Data frame of final curated reference sequences.
+#' @param qc_data Optional data frame of QC results.
+#' @param barcode_gap_data Optional data frame of barcode gap metrics.
+#' @param ambiguity_data Optional data frame of ambiguity records.
+#' @param table_name Name of the table to write.
+#' @param reference_table Name for the reference table (default `"reference_final"`).
+#' @param qc_table Name for the QC table (default `"qc_reference"`).
+#' @param barcode_gap_table Name for the barcode gap table (default `"barcode_gap_metrics"`).
+#' @param ambiguity_table Name for the ambiguity table (default `"ambiguous_sequences"`).
+#' @param overwrite Logical. Overwrite existing tables? Default `TRUE`.
+#' @param require_taxonomy Logical. If `TRUE`, enforces that the reference
+#'   table contains all seven taxonomic ranks (kingdom through species)
+#'   before writing. Default `TRUE`.
+#'
+#' @return
+#' * `rb_build_reference_db()` returns the normalized path to the created
+#'   database file (invisibly).
+#' * The individual `rb_write_*` functions return `TRUE` invisibly on success.
+#'
+#' @details
+#' The default table names are:
+#'
+#' | Table | Default name |
+#' |---|---|
+#' | Reference sequences | `reference_final` |
+#' | QC results | `qc_reference` |
+#' | Barcode gap metrics | `barcode_gap_metrics` |
+#' | Ambiguity archive | `ambiguous_sequences` |
+#'
+#' Before writing, `rb_prepare_reference_table()` ensures that the following
+#' columns exist (adding defaults where missing):
+#'
+#' * `qc_flag` (default `"pass"`)
+#' * `source` (default `"unknown"`)
+#' * `seq_type` (standardized from `gene` or `marker` columns)
+#' * `unique_code` (auto-generated from deduplicated sequences)
+#'
+#' List-columns are rejected and factor columns are converted to character
+#' before writing.
+#'
+#' @examples
+#' \dontrun{
+#' # Build a complete database in one call
+#' rb_build_reference_db(
+#'   path = "my_reference.db",
+#'   reference_data = final_data,
+#'   qc_data = qc_results,
+#'   barcode_gap_data = gap_metrics
+#' )
+#'
+#' # Or write tables individually to an existing connection
+#' con <- DBI::dbConnect(RSQLite::SQLite(), "my_reference.db")
+#' rb_write_reference_table(con, final_data)
+#' rb_write_qc_table(con, qc_results)
+#' DBI::dbDisconnect(con)
+#' }
+#'
+#' @name rb_write_db
+#' @family database writing
+NULL
 
-
-# ------------------------------------------------------------
-# Internal helper: prepare data frame for SQLite writing
-# ------------------------------------------------------------
-
+#' Internal: prepare a data frame for SQLite writing
+#'
+#' Converts factors to character and rejects list-columns.
+#'
+#' @keywords internal
+#' @noRd
 rb_prepare_for_sqlite <- function(data) {
   data <- as.data.frame(data, stringsAsFactors = FALSE)
   
@@ -36,14 +102,13 @@ rb_prepare_for_sqlite <- function(data) {
   data
 }
 
-
-# ------------------------------------------------------------
-# Internal helper: ensure minimal reference table schema
-#
-# This does not filter data. It only ensures that the columns
-# needed by common downstream functions exist.
-# ------------------------------------------------------------
-
+#' Internal: ensure minimal reference table schema
+#'
+#' Adds missing `qc_flag`, `source`, `seq_type`, and `unique_code` columns.
+#' Optionally validates taxonomy requirements.
+#'
+#' @keywords internal
+#' @noRd
 rb_prepare_reference_table <- function(data, require_taxonomy = TRUE) {
   rb_required_columns(data, c("species", "sequence"))
   
@@ -83,11 +148,12 @@ rb_prepare_reference_table <- function(data, require_taxonomy = TRUE) {
   data
 }
 
-
-# ------------------------------------------------------------
-# Generic table writer
-# ------------------------------------------------------------
-
+#' Internal: generic table writer
+#'
+#' Validates connection and data, then writes via [DBI::dbWriteTable()].
+#'
+#' @keywords internal
+#' @noRd
 rb_write_table <- function(con, table_name, data, overwrite = TRUE) {
   if (!DBI::dbIsValid(con)) {
     stop("Database connection is not valid.", call. = FALSE)
@@ -108,11 +174,8 @@ rb_write_table <- function(con, table_name, data, overwrite = TRUE) {
   invisible(TRUE)
 }
 
-
-# ------------------------------------------------------------
-# Write main reference table
-# ------------------------------------------------------------
-
+#' @rdname rb_write_db
+#' @export
 rb_write_reference_table <- function(con, data,
                                      table_name = "reference_final",
                                      overwrite = TRUE,
@@ -127,11 +190,8 @@ rb_write_reference_table <- function(con, data,
   )
 }
 
-
-# ------------------------------------------------------------
-# Write QC table
-# ------------------------------------------------------------
-
+#' @rdname rb_write_db
+#' @export
 rb_write_qc_table <- function(con, data,
                               table_name = "qc_reference",
                               overwrite = TRUE) {
@@ -148,11 +208,8 @@ rb_write_qc_table <- function(con, data,
   )
 }
 
-
-# ------------------------------------------------------------
-# Write barcode gap metrics
-# ------------------------------------------------------------
-
+#' @rdname rb_write_db
+#' @export
 rb_write_barcode_gap_table <- function(con, data,
                                        table_name = "barcode_gap_metrics",
                                        overwrite = TRUE) {
@@ -166,11 +223,8 @@ rb_write_barcode_gap_table <- function(con, data,
   )
 }
 
-
-# ------------------------------------------------------------
-# Optional: write ambiguity table
-# ------------------------------------------------------------
-
+#' @rdname rb_write_db
+#' @export
 rb_write_ambiguity_table <- function(con, data,
                                      table_name = "ambiguous_sequences",
                                      overwrite = TRUE) {
@@ -182,11 +236,8 @@ rb_write_ambiguity_table <- function(con, data,
   )
 }
 
-
-# ------------------------------------------------------------
-# One-step database builder
-# ------------------------------------------------------------
-
+#' @rdname rb_write_db
+#' @export
 rb_build_reference_db <- function(path,
                                   reference_data,
                                   qc_data = NULL,

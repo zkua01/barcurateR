@@ -1,17 +1,118 @@
-# ============================================================
-# R/gap.R
-# Barcode gap analysis: diagnostic sites, per-species gap metrics,
-# and the multi-marker orchestrator. Output column names match what
-# rb_barcode_gap()/rb_read_barcode_gap() (existing reporting functions)
-# expect to read.
-# ============================================================
- 
- 
-# ------------------------------------------------------------
-# rb_diagnostic_sites() 
-#' Count diagnostic sites distinguishing focal sequences from others
-# ------------------------------------------------------------
- 
+#' Barcode gap analysis for curated reference databases
+#'
+#' @description
+#' Functions to assess whether reference sequences for a species form a
+#' distinguishable barcode gap relative to sequences from other species.
+#'
+#' * `rb_run_barcode_gap()`: Runs barcode gap analysis across one or more
+#'   markers. Aligns sequences with `DECIPHER::AlignSeqs()`, then computes
+#'   per-species distance metrics.
+#' * `rb_barcode_gap_species()`: Computes barcode gap metrics for a single
+#'   species within an aligned marker dataset.
+#' * `rb_diagnostic_sites()`: Counts fixed diagnostic nucleotide positions
+#'   that distinguish focal sequences from non-focal sequences.
+#'
+#' @details
+#' `rb_run_barcode_gap()` expects a standardized reference data frame with
+#' at least species, marker/gene, and sequence columns. If a `qc_flag`
+#' column is present, only sequences with `qc_flag == "pass"` are used.
+#'
+#' For each marker, the function:
+#'
+#' 1. Filters to the requested marker.
+#' 2. Optionally removes alignment gap characters (`"-"`).
+#' 3. Filters species with at least `min_seqs` sequences.
+#' 4. Aligns sequences using `DECIPHER::AlignSeqs()`.
+#' 5. Computes barcode gap metrics for each species.
+#'
+#' The returned data frame includes intra- and inter-specific distance
+#' summaries, gap metrics, congeneric comparisons where available,
+#' diagnostic site counts, sampling adequacy, taxonomic resolution,
+#' assignment risk, and a recommended similarity threshold.
+#'
+#' If `parallel = TRUE`, a parallel cluster is used for the per-species
+#' calculations. If cluster setup or execution fails, the function
+#' automatically falls back to serial execution for that marker.
+#'
+#' Distance calculations use `rb_string_dist()`, which prefers
+#' `pwalign::stringDist()` and falls back to `Biostrings::stringDist()`
+#' on older Biostrings versions.
+#'
+#' @param data A standardized reference data frame.
+#' @param markers Character vector of marker names to analyze.
+#' @param species_col Name of the species column. Default `"species"`.
+#' @param genus_col Name of the genus column. If `NULL`, genus is derived
+#'   from the first token of the species name.
+#' @param gene_col Name of the marker/gene column. Default `"seq_type"`.
+#' @param sequence_col Name of the sequence column. Default `"sequence"`.
+#' @param qc_flag_col Name of the QC flag column. Default `"qc_flag"`.
+#'   If present, only sequences with `qc_flag == "pass"` are analyzed.
+#' @param min_seqs Minimum number of sequences required per species.
+#' @param parallel Logical. If `TRUE`, uses a parallel cluster where possible.
+#' @param n_workers Optional number of parallel workers. If `NULL`, defaults
+#'   to `parallel::detectCores() - 2`.
+#' @param remove_gaps Logical. If `TRUE`, removes `"-"` characters from
+#'   sequences before analysis. Default `TRUE`.
+#' @param species_name Species to analyze in `rb_barcode_gap_species()`.
+#' @param aligned_seqs Named character vector of aligned sequences.
+#' @param seq_len Aligned sequence length used to normalize distances.
+#' @param marker Marker name associated with the aligned sequences.
+#' @param max_other Maximum number of non-focal sequences to use when
+#'   computing global inter-specific distances. Default `2000`.
+#' @param max_congeners Maximum number of congeneric sequences to use when
+#'   computing congeneric distances. Default `500`.
+#' @param focal_seqs Character vector of focal sequences for
+#'   `rb_diagnostic_sites()`.
+#' @param other_seqs Character vector of non-focal sequences for
+#'   `rb_diagnostic_sites()`.
+#' @param min_freq Minimum focal base frequency required for a position to
+#'   be considered diagnostic. Default `0.9`.
+#'
+#' @return
+#' * `rb_run_barcode_gap()` returns a data frame of barcode gap metrics,
+#'   with one row per species per marker. Returns an empty data frame if
+#'   no suitable data are available.
+#' * `rb_barcode_gap_species()` returns a one-row data frame of barcode
+#'   gap metrics, or `NULL` if the species does not meet the minimum
+#'   sequence threshold or has no non-focal comparison sequences.
+#' * `rb_diagnostic_sites()` returns an integer count of diagnostic sites.
+#'
+#' @section Output columns:
+#' The data frame returned by `rb_run_barcode_gap()` and
+#' `rb_barcode_gap_species()` includes:
+#'
+#' * `species`, `marker`, `n_sequences`
+#' * `max_intra`, `min_inter`
+#' * `gap_exists`, `gap_width`
+#' * `p_overlap`, `q_overlap`
+#' * `median_intra`, `median_inter`
+#' * `intra_95`, `inter_5`, `percentile_gap`, `robust_gap`
+#' * `n_congeners_in_db`, `min_congeneric`, `congeneric_gap`
+#' * `congeneric_p_overlap`, `congeneric_q_overlap`
+#' * `n_diagnostic_sites`
+#' * `sampling_adequacy`, `taxonomic_resolution`
+#' * `gap_may_be_undersampling_artifact`
+#' * `error_msg`
+#' * `assignment_risk`, `recommended_threshold`
+#'
+#' @examples
+#' \dontrun{
+#' gap_results <- rb_run_barcode_gap(
+#'   final_data,
+#'   markers = c("COI", "12S"),
+#'   min_seqs = 5,
+#'   parallel = FALSE
+#' )
+#'
+#' head(gap_results)
+#' }
+#'
+#' @name rb_barcode_gap_analysis
+#' @family barcode gap
+NULL
+
+#' @rdname rb_barcode_gap_analysis
+#' @export
 rb_diagnostic_sites <- function(focal_seqs, other_seqs, min_freq = 0.9, max_other = 500) {
   if (length(other_seqs) > max_other) other_seqs <- sample(other_seqs, max_other)
 
@@ -25,18 +126,13 @@ rb_diagnostic_sites <- function(focal_seqs, other_seqs, min_freq = 0.9, max_othe
   sum(pos_diag, na.rm = TRUE)
 }
 
-# ------------------------------------------------------------
-# rb_string_dist()
-#
-# Wrapper around pairwise distance calculation.
-#
-# Biostrings::stringDist() was moved to the pwalign package
-# and is formally defunct in Biostrings >= 2.77.1.
-#
-# This helper prefers pwalign::stringDist(), but falls back to
-# Biostrings::stringDist() on older Biostrings versions.
-# ------------------------------------------------------------
-
+#' Calculate pairwise sequence distances
+#'
+#' Internal helper that wraps `pwalign::stringDist()` where available,
+#' falling back to older `Biostrings::stringDist()` versions.
+#'
+#' @keywords internal
+#' @noRd
 rb_string_dist <- function(x, method = "hamming") {
   if (requireNamespace("pwalign", quietly = TRUE)) {
     return(pwalign::stringDist(x, method = method))
@@ -57,22 +153,8 @@ rb_string_dist <- function(x, method = "hamming") {
   )
 }
 
-# ------------------------------------------------------------
-# rb_barcode_gap_species()
-#' Compute barcode gap metrics for one species within an aligned marker set
-#'
-#' @param min_seqs Minimum number of focal sequences required (default
-#'   5, matching the documented barcode-gap minimum). Returns NULL
-#'   below this threshold, or if `marker` is NA/blank (barcode gap
-#'   analysis requires a known marker).
-
-# Generalizes compute_gap(). `species_col`/`genus_col` were previously
-# hardcoded as `ref_df$species`/`ref_df$genus`; `max_other` (2000) and
-# `max_congeners` (500) subsampling caps are now parameters; `marker`
-# is passed explicitly instead of being captured from an enclosing
-# scope variable.
-# ------------------------------------------------------------
- 
+#' @rdname rb_barcode_gap_analysis
+#' @export
 rb_barcode_gap_species <- function(species_name, data, aligned_seqs, seq_len,
                                     species_col = "species", genus_col = "genus",
                                     marker = NA_character_,
@@ -85,7 +167,7 @@ rb_barcode_gap_species <- function(species_name, data, aligned_seqs, seq_len,
   if (is.na(marker) || !nzchar(marker)) {
     warning(
       "rb_barcode_gap_species() called with an unknown/blank marker for species '",
-      species_name, "' — skipping (barcode gap analysis requires a known marker).",
+      species_name, "' -- skipping (barcode gap analysis requires a known marker).",
       call. = FALSE
     )
     return(NULL)
@@ -188,25 +270,8 @@ rb_barcode_gap_species <- function(species_name, data, aligned_seqs, seq_len,
   })
 }
 
- 
-# ------------------------------------------------------------
-# rb_run_barcode_gap()
-#' Run barcode gap analysis across one or more markers
-
-#' @param parallel If TRUE, uses a parallel cluster per marker; on any
-#'   cluster setup/execution error, automatically falls back to serial
-#'   execution for that marker with a warning (rather than aborting).
-
-# Generalizes process_marker() + the top-level purrr::map(markers, ...)
-# driver. `markers` is now a parameter instead of a hardcoded
-# c("COI","12S","16S","genome") vector, so a 2-marker-only study (say,
-# COI + 12S) doesn't need to touch the function body. Column names for
-# species/genus/gene/sequence/qc_flag are all parameterized rather than
-# assumed. If no genus column is supplied, genus is derived from the
-# first token of the species name (matching the original script's
-# `sapply(strsplit(species, "\\s+"), \`[\`, 1)` fallback).
-# ------------------------------------------------------------
- 
+#' @rdname rb_barcode_gap_analysis
+#' @export
 rb_run_barcode_gap <- function(data, markers = c("COI", "12S", "16S", "genome"),
                                 species_col = "species", genus_col = NULL,
                                 gene_col = "seq_type", sequence_col = "sequence",
@@ -260,7 +325,7 @@ rb_run_barcode_gap <- function(data, markers = c("COI", "12S", "16S", "genome"),
       }, error = function(e) {
         warning(
           "Parallel barcode gap analysis failed for marker '", marker, "' (",
-          conditionMessage(e), ") — falling back to serial execution.",
+          conditionMessage(e), ") -- falling back to serial execution.",
           call. = FALSE
         )
         lapply(

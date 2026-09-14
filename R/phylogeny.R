@@ -1,25 +1,81 @@
 # ============================================================
-# R/phylogeny.R
-# Reusable gene-tree building (alignment + distance + NJ tree +
-# optional outgroup rooting). Deliberately does NOT include the
-# Megalobrama-specific mislabel-detection logic — see project notes /
-# examples/megalobrama_mislabel_correction.R for that, built on top of
-# this function.
-# ============================================================
-
-# ------------------------------------------------------------
-# rb_build_gene_tree()
-#' Build a neighbor-joining tree for one gene/marker across the dataset
+#' Build a neighbor-joining gene tree for a marker
 #'
-#' @param outgroup Optional species name (or pattern, if
-#'   `outgroup_exact = FALSE`) to root the tree on.
-#' @param outgroup_exact If TRUE (default), `outgroup` is matched as an
-#'   exact species via an anchored prefix match against tip labels
-#'   ("^<outgroup>-"), avoiding accidental partial matches (e.g.
-#'   outgroup = "sp2" no longer matches a tip for species "sp20"). Set
-#'   FALSE for the old substring-anywhere behavior.
-# ------------------------------------------------------------
-
+#' @description
+#' Builds a neighbor-joining phylogenetic tree for a single gene or marker
+#' across all sequences in the dataset. Sequences are aligned with
+#' `DECIPHER::AlignSeqs()`, pairwise distances are computed with
+#' `ape::dist.dna()`, and the tree is constructed with `ape::njs()`.
+#'
+#' Optionally, the tree can be rooted on a user-specified outgroup.
+#'
+#' @param data A standardized data frame containing at least the columns
+#'   specified by `gene_col`, `species_col`, `sequence_col`, and `id_col`.
+#' @param gene_type The marker/gene to build the tree for (e.g., `"COI"`,
+#'   `"12S"`).
+#' @param gene_col Name of the column containing marker/gene labels.
+#'   Default `"seq_type"`.
+#' @param species_col Name of the species column. Default `"species"`.
+#' @param sequence_col Name of the sequence column. Default `"sequence"`.
+#' @param id_col Name of the unique sequence identifier column.
+#'   Default `"unique_code"`.
+#' @param outgroup Optional species name to root the tree on. If `NULL`,
+#'   the tree is left unrooted.
+#' @param outgroup_exact Logical. If `TRUE` (default), `outgroup` is matched
+#'   as an anchored prefix against tip labels (`"^<outgroup>-"`), avoiding
+#'   accidental partial matches. Set `FALSE` for substring-anywhere matching.
+#' @param dna_model DNA substitution model passed to `ape::dist.dna()`.
+#'   Default `"K80"` (Kimura 2-parameter).
+#' @param min_seqs Minimum number of sequences required to build a tree.
+#'   Default `3`.
+#' @param min_length Minimum sequence length (in bp) after gap removal.
+#'   Default `100`.
+#'
+#' @return A list containing:
+#' \describe{
+#'   \item{tree}{A rooted or unrooted `phylo` object.}
+#'   \item{method}{The tree-building method used (`"njs"`).}
+#'   \item{n_tips}{The number of tips in the tree.}
+#' }
+#' Returns `NULL` (with a warning) if fewer than `min_seqs` sequences
+#' remain after filtering.
+#'
+#' @details
+#' The function performs the following steps:
+#'
+#' 1. Filters `data` to the requested `gene_type`.
+#' 2. Removes duplicate sequences.
+#' 3. Strips alignment gap characters (`"-"`).
+#' 4. Filters sequences shorter than `min_length`.
+#' 5. Aligns sequences using `DECIPHER::AlignSeqs()`.
+#' 6. Computes pairwise distances with `ape::dist.dna()`.
+#' 7. Builds a neighbor-joining tree with `ape::njs()`.
+#' 8. Optionally roots the tree on the specified outgroup.
+#'
+#' Tip labels are formatted as `"<species>-<unique_code>"`, with spaces
+#' in species names replaced by hyphens.
+#'
+#' This function deliberately does not include taxon-specific mislabel
+#' detection logic. For that, build on top of this function using
+#' project-specific heuristics.
+#'
+#' @examples
+#' \dontrun{
+#' # Build an unrooted COI tree
+#' tree_result <- rb_build_gene_tree(final_data, gene_type = "COI")
+#' plot(tree_result$tree)
+#'
+#' # Build a rooted 12S tree using an outgroup
+#' tree_result <- rb_build_gene_tree(
+#'   final_data,
+#'   gene_type = "12S",
+#'   outgroup = "Alligator sinensis"
+#' )
+#' plot(tree_result$tree)
+#' }
+#'
+#' @family phylogeny
+#' @export
 rb_build_gene_tree <- function(data, gene_type, gene_col = "seq_type",
                                 species_col = "species", sequence_col = "sequence",
                                 id_col = "unique_code", outgroup = NULL,
@@ -63,7 +119,7 @@ rb_build_gene_tree <- function(data, gene_type, gene_col = "seq_type",
     } else {
       warning(
         "Outgroup pattern '", outgroup, "' not found in tree tips (",
-        if (isTRUE(outgroup_exact)) "exact" else "substring", " match) — tree left unrooted.",
+        if (isTRUE(outgroup_exact)) "exact" else "substring", " match) -- tree left unrooted.",
         call. = FALSE
       )
     }

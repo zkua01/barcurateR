@@ -1,21 +1,84 @@
-# ============================================================
-# R/parse.R
-# Source parsing: marker extraction, per-source table parsing,
-# primer trimming, combining sources, ambiguous-sequence resolution.
-# ============================================================
+#' Parse and standardize source sequence tables
+#'
+#' @description
+#' Functions to extract marker information from sequence descriptions and
+#' parse raw source tables into the standardized barcurateR schema.
+#'
+#' * `rb_default_marker_patterns()`: Returns the default regular expressions
+#'   used to detect common mitochondrial and ribosomal markers.
+#' * `rb_extract_markers()`: Extracts marker type and completeness from a
+#'   free-text sequence description.
+#' * `rb_parse_source_table()`: Parses a raw source table into the
+#'   standardized schema used by downstream QC and curation functions.
+#'
+#' @details
+#' The standardized schema used by barcurateR expects at least:
+#'
+#' * `species`
+#' * `sequence`
+#' * `seq_type`
+#' * `source`
+#'
+#' Additional columns such as `sequence_id`, `description`, `length`,
+#' and source-specific metadata may also be retained.
+#'
+#' `rb_parse_source_table()` uses a user-supplied `column_map` to rename
+#' raw columns into the standardized schema. If a description column is
+#' provided, marker type is inferred using `rb_extract_markers()` and then
+#' simplified with the internal helper `rb_simplify_seq_type()`.
+#'
+#' @param description Free-text sequence description, for example a GenBank
+#'   definition line.
+#' @param marker_patterns Named list mapping marker names to detection
+#'   regular expressions.
+#' @param genome_pattern Regular expression identifying complete genome
+#'   records.
+#' @param multi_gene_pattern Regular expression identifying multi-gene
+#'   records.
+#' @param other_gene_pattern Regular expression identifying non-marker gene
+#'   mentions such as tRNA, ND, or ATP genes.
+#' @param raw Raw data frame as read from a source file.
+#' @param source_name Short label for the source, for example `"ncbi"` or
+#'   `"bold"`.
+#' @param column_map Named character vector mapping standardized column
+#'   names to column names in `raw`.
+#' @param marker_fn Function used to derive marker type from a description
+#'   column. Default is `rb_extract_markers()`.
+#' @param description_col Optional name of a free-text description column
+#'   in `raw`.
+#' @param min_length Minimum sequence length to retain. Default `1`.
+#'
+#' @return
+#' * `rb_default_marker_patterns()` returns a named list of regular
+#'   expressions.
+#' * `rb_extract_markers()` returns a character string describing the
+#'   detected marker and completeness, for example `"COI_partial"`,
+#'   `"12S_unknown"`, `"genome_complete"`, `"multi_marker"`, or
+#'   `"other_unknown"`.
+#' * `rb_parse_source_table()` returns a standardized data frame.
+#'
+#' @examples
+#' \dontrun{
+#' raw_ncbi <- read.csv("ncbi_sequences.csv", stringsAsFactors = FALSE)
+#'
+#' parsed_ncbi <- rb_parse_source_table(
+#'   raw_ncbi,
+#'   source_name = "ncbi",
+#'   column_map = c(
+#'     sequence_id = "sequence_id",
+#'     species = "species_query",
+#'     sequence = "sequence"
+#'   ),
+#'   description_col = "description"
+#' )
+#' }
+#'
+#' @name rb_parse_sources
+#' @family parsing
+NULL
 
-
-# ------------------------------------------------------------
-# rb_default_marker_patterns() / rb_extract_markers()
-#
-# Generalizes extract_markers(). marker_patterns, genome_pattern,
-# multi_gene_pattern, and other_gene_pattern are now parameters
-# instead of literals baked into the function body — a dataset with a
-# different marker set (e.g. ITS/rbcL for plants, or a 5-marker fish
-# panel) supplies its own marker_patterns list instead of editing the
-# function.
-# ------------------------------------------------------------
-
+#' @rdname rb_parse_sources
+#' @export
 rb_default_marker_patterns <- function() {
   list(
     "12S" = "12s|mt-rnr1|12s ribosomal rna",
@@ -26,20 +89,13 @@ rb_default_marker_patterns <- function() {
   )
 }
 
-# ------------------------------------------------------------
-# rb_simplify_seq_type()
-#
-# Converts the detailed output of rb_extract_markers() into a
-# clean seq_type label suitable for downstream QC checks.
-#
-# Examples:
-#   "COI_partial"        -> "COI"
-#   "12S_unknown"        -> "12S"
-#   "genome_complete"    -> "genome_complete"
-#   "COI_partial;16S_partial" -> "multi_marker"
-#   "other_unknown"      -> "other_unknown"
-# ------------------------------------------------------------
-
+#' Simplify marker labels for downstream QC
+#'
+#' Internal helper that converts detailed marker labels returned by
+#' `rb_extract_markers()` into clean `seq_type` values used by QC checks.
+#'
+#' @keywords internal
+#' @noRd
 rb_simplify_seq_type <- function(marker_label) {
   vapply(marker_label, function(label) {
     
@@ -80,19 +136,8 @@ rb_simplify_seq_type <- function(marker_label) {
   }, character(1), USE.NAMES = FALSE)
 }
 
-#' rb_extract_markers
-#' Extract marker type + completeness from a sequence description
-#' @param description Free-text sequence description (e.g. a GenBank
-#'   definition line).
-#' @param marker_patterns Named list mapping marker name -> detection
-#'   regex. Default covers 12S/16S/COI; supply your own for other
-#'   marker sets (e.g. list(ITS = "its")).
-#' @param genome_pattern Regex identifying a complete-genome record.
-#' @param multi_gene_pattern Regex identifying a multi-gene record.
-#' @param other_gene_pattern Regex identifying non-marker gene mentions
-#'   (tRNA, cytb, ND, ATP genes) used to flag an "other" component in a
-#'   multi-gene record.
-
+#' @rdname rb_parse_sources
+#' @export
 rb_extract_markers <- function(description,
                                 marker_patterns = rb_default_marker_patterns(),
                                 genome_pattern = "complete genome|mitochondrion, complete genome|mitogenome",
@@ -159,27 +204,8 @@ rb_extract_markers <- function(description,
   "other_unknown"
 }
 
-
-# ------------------------------------------------------------
-# rb_parse_source_table()
-#' Parse one source's raw sequence table into the standard schema
-#'
-#' @param raw Raw data.frame as read from a source file.
-#' @param source_name Short label for this source (e.g. "bold", "ncbi").
-#' @param column_map Named character vector: standard name -> column
-#'   name in `raw`. Passed to rb_standardize_columns() (R/utils.R).
-#' @param marker_fn Function to derive seq_type from a description
-#'   column, default rb_extract_markers().
-#' @param description_col Optional name (in `raw`, before renaming) of
-#'   a free-text description column to run marker_fn over. If omitted
-#'   and no seq_type column exists after renaming, seq_type defaults
-#'   to "other_unknown".
-#
-# Generalizes the 5 separate hardcoded per-source blocks (NCBI/BOLD/
-# MitoFish/MIDORI2/local) into one function driven by a column_map,
-# using rb_standardize_columns() from Module 5 to do the renaming.
-# ------------------------------------------------------------
-
+#' @rdname rb_parse_sources
+#' @export
 rb_parse_source_table <- function(raw, source_name, column_map,
                                   marker_fn = rb_extract_markers,
                                   description_col = NULL,
@@ -203,18 +229,57 @@ rb_parse_source_table <- function(raw, source_name, column_map,
   parsed
 }
 
-# ------------------------------------------------------------
-# rb_reverse_complement() / rb_remove_primers()
-# Already dataset-agnostic logic — pulled out of the BOLD-only code
-# path so any source with primer-flanked sequences can call it.
-# ------------------------------------------------------------
+#' Prepare and trim raw DNA sequences
+#'
+#' @description
+#' Utility functions for preparing raw DNA sequences during source
+#' standardization.
+#'
+#' * `rb_reverse_complement()`: Returns the reverse complement of a DNA
+#'   sequence.
+#' * `rb_remove_primers()`: Removes matching forward and reverse primer
+#'   sequences from the ends of a sequence, if present.
+#'
+#' @param dna_seq Character vector of DNA sequences.
+#' @param sequence Character vector of DNA sequences to trim.
+#' @param f_primer_seqs Character vector of forward primer sequences.
+#'   Use `NA` if no forward primers should be removed.
+#' @param r_primer_seqs Character vector of reverse primer sequences.
+#'   Use `NA` if no reverse primers should be removed.
+#'
+#' @return
+#' A character vector of transformed sequences.
+#'
+#' @details
+#' `rb_remove_primers()` performs simple exact matching at sequence ends.
+#' Forward primers are removed from the start of the sequence. Reverse
+#' primers are reverse-complemented and removed from the end of the
+#' sequence.
+#'
+#' @examples
+#' \dontrun{
+#' rb_reverse_complement("ATGC")
+#'
+#' rb_remove_primers(
+#'   "ACGTACGTACGT",
+#'   f_primer_seqs = "ACGT",
+#'   r_primer_seqs = NA
+#' )
+#' }
+#'
+#' @name rb_sequence_prep
+#' @family parsing
+NULL
 
+#' @rdname rb_sequence_prep
+#' @export
 rb_reverse_complement <- function(dna_seq) {
   complement <- chartr("ATCG", "TAGC", dna_seq)
   stringi::stri_reverse(complement)
 }
            
-#' Trim flanking primers off a sequence, if present
+#' @rdname rb_sequence_prep
+#' @export
 rb_remove_primers <- function(sequence, f_primer_seqs = NA_character_,
                                r_primer_seqs = NA_character_) {
   if (all(is.na(f_primer_seqs)) && all(is.na(r_primer_seqs))) return(sequence)
@@ -237,13 +302,75 @@ rb_remove_primers <- function(sequence, f_primer_seqs = NA_character_,
   sequence
 }
 
+#' Combine parsed sources and resolve ambiguous sequences
+#'
+#' @description
+#' Functions to combine multiple standardized source tables and resolve
+#' sequences that are assigned to multiple species.
+#'
+#' * `rb_combine_sources()`: Combines parsed source tables and removes
+#'   duplicated species-sequence combinations.
+#' * `rb_resolve_ambiguous()`: Detects and resolves sequences assigned to
+#'   multiple species.
+#'
+#' @param source_list List of standardized source data frames.
+#' @param species_col Name of the species column. Default `"species"`.
+#' @param sequence_col Name of the sequence column. Default `"sequence"`.
+#' @param data Standardized data frame to check for ambiguous sequences.
+#' @param resolution_table Optional data frame resolving ambiguous
+#'   sequences. Must contain an `action` column with values `"keep"`,
+#'   `"combine"`, or `"drop"`.
+#' @param on_unresolved Action to take when ambiguous sequences are found
+#'   and no `resolution_table` is supplied. One of `"stop"`, `"warn"`,
+#'   or `"drop"`. Default `"stop"`.
+#' @param flag_output_path Optional path to write ambiguous rows for manual
+#'   review before resolving.
+#'
+#' @return
+#' * `rb_combine_sources()` returns a combined data frame with duplicated
+#'   species-sequence combinations removed.
+#' * `rb_resolve_ambiguous()` returns a resolved data frame.
+#'
+#' @details
+#' Ambiguous sequences are sequences that appear under more than one
+#' species. These must be resolved before QC because downstream QC and
+#' curation assume that each sequence is assigned to a single species.
+#'
+#' If a `resolution_table` is supplied, it should contain one row per
+#' ambiguous sequence and an `action` column:
+#'
+#' * `"keep"`: keep the specified resolution.
+#' * `"combine"`: combine records across species, pipe-joining values that
+#'   differ across the ambiguous group.
+#' * `"drop"`: remove the ambiguous sequence.
+#'
+#' If no `resolution_table` is supplied, `on_unresolved` controls the
+#' behavior:
+#'
+#' * `"stop"`: stop with an error.
+#' * `"warn"`: warn and return the data unchanged.
+#' * `"drop"`: warn and remove ambiguous rows.
+#'
+#' @examples
+#' \dontrun{
+#' combined <- rb_combine_sources(
+#'   list(ncbi_parsed, bold_parsed),
+#'   species_col = "species",
+#'   sequence_col = "sequence"
+#' )
+#'
+#' resolved <- rb_resolve_ambiguous(
+#'   combined,
+#'   on_unresolved = "drop"
+#' )
+#' }
+#'
+#' @name rb_combine_resolve
+#' @family parsing
+NULL
 
-# ------------------------------------------------------------
-# rb_combine_sources()
- #' Combine multiple standardized source tables, deduplicating by
-#' species + sequence.
-# ------------------------------------------------------------
-
+#' @rdname rb_combine_resolve
+#' @export
 rb_combine_sources <- function(source_list, species_col = "species", sequence_col = "sequence") {
   combined <- dplyr::bind_rows(source_list)
   combined[[sequence_col]] <- rb_clean_sequence(combined[[sequence_col]])
@@ -252,28 +379,8 @@ rb_combine_sources <- function(source_list, species_col = "species", sequence_co
   combined
 }
 
-
-# ------------------------------------------------------------
-# rb_resolve_ambiguous()
-#' Resolve sequences that were assigned to multiple species
-#'
-#' @param resolution_table Table with an `action` column ("keep" or
-#'   "combine") resolving each ambiguous sequence.
-#' @param combine_cols Columns that may legitimately differ across an
-#'   ambiguous group and should be pipe-joined when combined (e.g.
-#'   species/source/sequence_id/seq_type). Every other column is taken
-#'   via first() on the assumption it's identical across the group
-#'   (true by construction for e.g. `length`, since the group shares
-#'   one sequence).
-#' @param on_unresolved What to do when ambiguous sequences exist and
-#'   no resolution_table is supplied: "stop" (default, matches
-#'   original script), "warn" (return data unchanged), or "drop"
-#'   (remove the ambiguous rows).
-#' @param flag_output_path Optional path to write the ambiguous rows
-#'   for manual review before resolving (only used in the
-#'   no-resolution-table case).
-# ------------------------------------------------------------
-
+#' @rdname rb_combine_resolve
+#' @export
 rb_resolve_ambiguous <- function(data, species_col = "species", sequence_col = "sequence",
                                   resolution_table = NULL,
                                   on_unresolved = "stop",

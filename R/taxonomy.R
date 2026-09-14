@@ -1,10 +1,89 @@
-# ============================================================
-# R/taxonomy.R
-# Species-name standardization and taxonomic lineage joining.
-# (rb_build_taxonomy_string(), if it already lives in this file, is
-# unchanged by this refactor and should stay here alongside these.)
-# ============================================================
+#' Taxonomy standardization, joining, and string formatting
+#'
+#' @description
+#' Functions to standardize species names, join taxonomic lineage onto
+#' reference data, and format taxonomy strings for export.
+#'
+#' * `rb_build_taxonomy_string()`: Formats the seven taxonomic ranks into
+#'   a semicolon-delimited string, optionally with rank prefixes.
+#' * `rb_standardize_species()`: Maps alternative species names to valid
+#'   names using a reference table, with an optional external taxonomy
+#'   lookup callback as fallback.
+#' * `rb_join_taxonomy()`: Joins a taxonomy table onto reference data,
+#'   filling missing genus/family/order with a configurable label and
+#'   applying constant higher-rank defaults.
+#'
+#' @param data A data frame containing at least the seven taxonomic
+#'   ranks (`kingdom` through `species`) for `rb_build_taxonomy_string()`,
+#'   or at least the column specified by `by` for `rb_join_taxonomy()`.
+#' @param style Formatting style for `rb_build_taxonomy_string()`.
+#'   One of `"plain"` (default) or `"rank_prefix"`.
+#' @param names Character vector of species names to standardize.
+#' @param reference_table A data frame mapping alternative names to
+#'   valid names for `rb_standardize_species()`.
+#' @param taxonomy_table A data frame containing taxonomic lineage to join
+#'   onto `data` for `rb_join_taxonomy()`. Must contain the column specified by `by`, and optionally
+#'   columns for `genus`, `family`, `order`, and higher ranks.
+#' @param name_col Column in `reference_table` holding alternative/known
+#'   names. Default `"alternative_clean"`.
+#' @param valid_col Column in `reference_table` holding the valid name.
+#'   Default `"valid_name"`.
+#' @param taxonomy_lookup Optional callback `function(name) -> valid_name`
+#'   used when `reference_table` has no match (e.g., an external catalog
+#'   API). `NULL` by default.
+#' @param by Column name to join on. Default `"species"`.
+#' @param defaults Named list of constant higher-rank values applied to
+#'   every row, e.g., `list(kingdom = "Metazoa", phylum = "Chordata")`.
+#' @param unassigned_label Label used when genus/family/order cannot be
+#'   resolved. Default `"UNASSIGNED"`.
+#'
+#' @return
+#' * `rb_build_taxonomy_string()` returns a character vector of formatted
+#'   taxonomy strings, one per row.
+#' * `rb_standardize_species()` returns a character vector of standardized
+#'   species names, with `NA` for unmatched names.
+#' * `rb_join_taxonomy()` returns the input data frame with taxonomic
+#'   lineage columns joined.
+#'
+#' @details
+#' `rb_build_taxonomy_string()` supports two styles:
+#'
+#' | Style | Example output |
+#' |---|---|
+#' | `"plain"` | `Animalia;Chordata;Actinopterygii;...` |
+#' | `"rank_prefix"` | `k__Animalia;p__Chordata;c__Actinopterygii;...` |
+#'
+#' Missing or empty values are replaced with `"unassigned"`.
+#'
+#' `rb_join_taxonomy()` guards against silent Cartesian joins by checking
+#' for duplicate keys in `taxonomy_table` before merging. If duplicates
+#' are found, it stops with an informative error.
+#'
+#' @examples
+#' \dontrun{
+#' # Build taxonomy strings for DADA2 export
+#' tax_strings <- rb_build_taxonomy_string(refs, style = "plain")
+#'
+#' # Standardize species names
+#' valid_names <- rb_standardize_species(
+#'   raw_names,
+#'   reference_table = name_mapping
+#' )
+#'
+#' # Join taxonomy onto curated data
+#' final_data <- rb_join_taxonomy(
+#'   qc_data,
+#'   taxonomy_table = tax_table,
+#'   defaults = list(kingdom = "Animalia", phylum = "Chordata")
+#' )
+#' }
+#'
+#' @name rb_taxonomy_utils
+#' @family taxonomy
+NULL
 
+#' @rdname rb_taxonomy_utils
+#' @export
 rb_build_taxonomy_string <- function(data, style = c("plain", "rank_prefix")) {
   style <- match.arg(style)
   ranks <- c("kingdom", "phylum", "class", "order", "family", "genus", "species")
@@ -18,31 +97,8 @@ rb_build_taxonomy_string <- function(data, style = c("plain", "rank_prefix")) {
   })
 }
 
-
-# ------------------------------------------------------------
-# rb_standardize_species()
-#
-#' Standardize a species name against a reference table, with an
-#' optional external taxonomy lookup as fallback
-#'
-#' @param reference_table Table mapping known alternative names to the
-#'   currently valid name.
-#' @param name_col Column in reference_table holding alternative/known
-#'   names (lowercased for matching).
-#' @param valid_col Column in reference_table holding the valid name.
-#' @param taxonomy_lookup Optional callback `function(name) -> valid_name`
-#'   used when reference_table has no match (e.g. an external catalog
-#'   API). NULL by default, so non-fish datasets skip this step
-#'   entirely rather than needing a stub implementation.
-#'
-#' Note: the original script's fuzzy-match cross-check (comparing an
-#' NCBI header's extracted species name against the query species name
-#' via stringdist) is intentionally NOT included here — it's specific
-#' to NCBI header parsing, not general name standardization. If wanted,
-#' it belongs inside rb_parse_source_table() (R/parse.R) for
-#' NCBI-style sources.
-# ------------------------------------------------------------
-
+#' @rdname rb_taxonomy_utils
+#' @export
 rb_standardize_species <- function(names, reference_table,
                                     name_col = "alternative_clean",
                                     valid_col = "valid_name",
@@ -63,17 +119,8 @@ rb_standardize_species <- function(names, reference_table,
   }, character(1), USE.NAMES = FALSE)
 }
 
- 
-#' Join taxonomic lineage onto reference data with configurable defaults
-#'
-#' @param taxonomy_table Reference table with columns: species (or
-#'   whatever `by` is), genus, family, order.
-#' @param by Column to join on (default "species").
-#' @param defaults Named list of constant higher-rank values applied
-#'   to every row, e.g. list(kingdom = "Metazoa", phylum = "Chordata",
-#'   class = "Actinopteri").
-#' @param unassigned_label Label used when genus/family/order can't be
-#'   resolved (default "UNASSIGNED").
+#' @rdname rb_taxonomy_utils
+#' @export
 rb_join_taxonomy <- function(data, taxonomy_table, by = "species",
                               defaults = list(), unassigned_label = "UNASSIGNED") {
   rb_required_columns(data, by)
@@ -84,7 +131,7 @@ rb_join_taxonomy <- function(data, taxonomy_table, by = "species",
   if (length(dup_species) > 0) {
     stop(
       "taxonomy_table has duplicate entries for: ", paste(unique(dup_species), collapse = ", "),
-      ". merge() would silently multiply rows for these species — ",
+      ". merge() would silently multiply rows for these species -- ",
       "deduplicate taxonomy_table before calling rb_join_taxonomy().",
       call. = FALSE
     )
@@ -104,5 +151,3 @@ rb_join_taxonomy <- function(data, taxonomy_table, by = "species",
 
   out
 }
-
-

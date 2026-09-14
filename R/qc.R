@@ -1,26 +1,31 @@
-# ============================================================
-# R/qc.R
-# Full QC pipeline: contaminant/NUMT screening, codon and rRNA
-# integrity checks, genome completeness, divergence detection,
-# ambiguous-content check, flag compilation, and the orchestrator that
-# replaces edna_ref_qc.R AND edna_ref_qc_p2.R (call it twice — once on
-# standardized data, once on ML-classified data).
-# ============================================================
-#
-# Usage after this refactor: call rb_run_qc_pipeline() TWICE —
-#   qc1 <- rb_run_qc_pipeline(standardized_data, blast_db, numt_fasta)
-#   # ... run rb_train_classifier()/rb_classify_sequences() on qc1 ...
-#   qc2 <- rb_run_qc_pipeline(classified_data, blast_db, numt_fasta)
-# — instead of maintaining edna_ref_qc.R and edna_ref_qc_p2.R as two
-# separate ~300-line scripts.
-# ============================================================
+#' Screen reference sequences for contaminants and NUMTs
+#'
+#' @description
+#' Functions to identify sequences that match known contaminants or
+#' nuclear mitochondrial pseudogenes (NUMTs).
+#'
+#' * `rb_screen_contaminants()`: Screens sequences against a BLAST database.
+#' * `rb_screen_numts()`: Screens sequences against a FASTA file of known
+#'   NUMTs using exact substring matching.
+#'
+#' @param sequences Character vector of DNA sequences to screen.
+#' @param blast_db Path prefix to a BLAST nucleotide database.
+#' @param perc_identity Minimum percent identity for BLAST hits.
+#' @param evalue E-value threshold for BLAST hits.
+#' @param min_pident Minimum percent identity to flag as contaminant.
+#' @param min_length Minimum alignment length to flag as contaminant.
+#' @param threads Number of BLAST threads.
+#' @param blastn Path to the `blastn` executable.
+#' @param numt_fasta Path to a FASTA file of known NUMT sequences.
+#' @param min_match_length Sequences shorter than this are not screened.
+#'
+#' @return A logical vector where `TRUE` indicates the sequence was flagged.
+#' @family quality control
+#' @name rb_qc_screening
+NULL
 
-
-# ------------------------------------------------------------
-# rb_screen_contaminants()
-#' Screen sequences for contaminants via BLASTN against a reference db
-# ------------------------------------------------------------
-
+#' @rdname rb_qc_screening
+#' @export
 rb_screen_contaminants <- function(sequences, blast_db, perc_identity = 95,
                                    evalue = 1e-20, min_pident = 95,
                                    min_length = 100, threads = 1,
@@ -66,7 +71,7 @@ rb_screen_contaminants <- function(sequences, blast_db, perc_identity = 95,
   # Parse the output file
   if (file.exists(temp_out) && file.info(temp_out)$size > 0) {
     hits <- tryCatch({
-      read.delim(temp_out, header = FALSE,
+      utils::read.delim(temp_out, header = FALSE,
                  col.names = c("qseqid", "pident", "evalue", "length"),
                  colClasses = c("character", "numeric", "numeric", "integer"),
                  check.names = FALSE)
@@ -96,29 +101,17 @@ rb_screen_contaminants <- function(sequences, blast_db, perc_identity = 95,
   is_contaminant
 }
 
-
-# ------------------------------------------------------------
-# rb_screen_numts()
-                     
-#' Screen sequences for NUMT contamination (query found within a
-#' known NUMT reference)
-#'
-#' @param min_match_length Sequences shorter than this are always
-#'   screened as FALSE — a short query can match a long reference by
-#'   chance. Validate the false-positive rate on known-clean sequences
-#'   before trusting this in production; the right threshold depends
-#'   on your marker length and reference set.
-# ------------------------------------------------------------
-
+#' @rdname rb_qc_screening
+#' @export
 rb_screen_numts <- function(sequences, numt_fasta, min_match_length = 50) {
   if (is.null(numt_fasta) || !file.exists(numt_fasta)) {
-    warning("NUMT reference file not found: ", numt_fasta, " — screening skipped.", call. = FALSE)
+    warning("NUMT reference file not found: ", numt_fasta, " -- screening skipped.", call. = FALSE)
     return(rep(FALSE, length(sequences)))
   }
   numt_seqs <- toupper(unique(unlist(seqinr::read.fasta(numt_fasta, seqonly = TRUE))))
-
+  
   # Direction: is the (short) QUERY found within a (long) NUMT
-  # reference — not the reverse, since NUMT references built from
+  # reference -- not the reverse, since NUMT references built from
   # chromosome/scaffold/genome-scale Entrez hits are far larger than
   # any marker-length query and could never contain it the other way.
   vapply(sequences, function(seq) {
@@ -130,12 +123,44 @@ rb_screen_numts <- function(sequences, numt_fasta, min_match_length = 50) {
   }, logical(1), USE.NAMES = FALSE)
 }
 
+#' Sequence integrity checks for quality control
+#'
+#' @description
+#' Functions to check individual sequences or groups of sequences for
+#' common quality issues.
+#'
+#' * `rb_check_codons()`: Checks coding sequences for stop codons/frameshifts.
+#' * `rb_check_rrna_integrity()`: Checks rRNA sequences for length and gaps.
+#' * `rb_check_genome_completeness()`: Flags complete genomes missing markers.
+#' * `rb_check_divergence()`: Detects phylogenetically divergent sequences.
+#'
+#' @param sequence A single DNA sequence string.
+#' @param gene The gene/marker type (e.g., `"COI"`, `"12S"`).
+#' @param coding_genes Gene types to check for codon issues.
+#' @param genetic_code Genetic code table (default `"2"` for vertebrate mtDNA).
+#' @param rrna_genes Gene types to check for rRNA integrity.
+#' @param min_length Minimum expected length for rRNA sequences.
+#' @param data A data frame containing sequences and metadata.
+#' @param required_genes Genes required for a complete genome.
+#' @param genome_gene Label for complete genome records.
+#' @param species_col,gene_col,sequence_col,id_col Column names.
+#' @param min_seqs Minimum sequences per group for divergence analysis.
+#' @param outlier_mult Multiplier for median edge length to find outliers.
+#' @param outlier_floor Minimum absolute edge length for outliers.
+#' @param mafft,fasttree Paths to external executables.
+#'
+#' @return
+#' * `rb_check_codons()` returns a list with `has_stop`, `frameshifted`, `best_frame`.
+#' * `rb_check_rrna_integrity()` returns a list with `has_short`, `has_gaps`.
+#' * `rb_check_genome_completeness()` returns `data` with a `genome_flag` column.
+#' * `rb_check_divergence()` returns `data` with a `div_result` column.
+#'
+#' @family quality control
+#' @name rb_qc_checks
+NULL
 
-# ------------------------------------------------------------
-# rb_check_codons()
-#' Check COI/genome sequences for internal stop codons and frameshifts
-# ------------------------------------------------------------
-
+#' @rdname rb_qc_checks
+#' @export
 rb_check_codons <- function(sequence, gene, coding_genes = c("COI", "complete_genome"),
                             genetic_code = "2") {
   if (!gene %in% coding_genes) {
@@ -172,14 +197,10 @@ rb_check_codons <- function(sequence, gene, coding_genes = c("COI", "complete_ge
   }, error = function(e) list(has_stop = NA, frameshifted = NA, best_frame = NA))
 }
 
-
-# ------------------------------------------------------------
-# rb_check_rrna_integrity()
- #' Check 12S/16S sequences for length and gap issues
-# ------------------------------------------------------------
-
+#' @rdname rb_qc_checks
+#' @export
 rb_check_rrna_integrity <- function(sequence, gene, rrna_genes = c("12S", "16S"),
-                                     min_length = 100) {
+                                    min_length = 100) {
   if (!gene %in% rrna_genes) return(list(has_short = NA, has_gaps = NA))
   list(
     has_short = nchar(sequence) < min_length,
@@ -187,23 +208,20 @@ rb_check_rrna_integrity <- function(sequence, gene, rrna_genes = c("12S", "16S")
   )
 }
 
-# ------------------------------------------------------------
-# rb_check_genome_completeness()
-#' Flag complete genomes missing required marker genes
-# ------------------------------------------------------------
-
+#' @rdname rb_qc_checks
+#' @export
 rb_check_genome_completeness <- function(data, required_genes = c("COI", "12S"),
-                                          genome_gene = "complete_genome",
-                                          species_col = "species", gene_col = "gene") {
+                                         genome_gene = "complete_genome",
+                                         species_col = "species", gene_col = "gene") {
   rb_required_columns(data, c(species_col, gene_col))
-
+  
   species_has_genes <- stats::aggregate(
     data[[gene_col]],
     by = list(species = data[[species_col]]),
     FUN = function(genes) all(required_genes %in% genes)
   )
   names(species_has_genes) <- c(species_col, "has_required_genes")
-
+  
   data <- merge(data, species_has_genes, by = species_col, all.x = TRUE)
   data$genome_flag <- ifelse(
     data[[gene_col]] == genome_gene & !data$has_required_genes,
@@ -213,18 +231,14 @@ rb_check_genome_completeness <- function(data, required_genes = c("COI", "12S"),
   data
 }
 
-# ------------------------------------------------------------
-# rb_check_divergence()
-#' Detect phylogenetically divergent (likely mislabeled) sequences
-#' within each species/gene group via MAFFT + FastTree
-# ------------------------------------------------------------
-
+#' @rdname rb_qc_checks
+#' @export
 rb_check_divergence <- function(data, species_col = "species", gene_col = "gene",
-                                 sequence_col = "sequence", id_col = "unique_code",
-                                 min_seqs = 5, outlier_mult = 5, outlier_floor = 0.02,
-                                 mafft = "mafft", fasttree = "FastTree") {
+                                sequence_col = "sequence", id_col = "unique_code",
+                                min_seqs = 5, outlier_mult = 5, outlier_floor = 0.02,
+                                mafft = "mafft", fasttree = "FastTree") {
   rb_required_columns(data, c(species_col, gene_col, sequence_col, id_col))
-
+  
   check_one_group <- function(group_data) {
     n_seqs <- nrow(group_data)
     if (n_seqs < min_seqs) {
@@ -239,7 +253,7 @@ rb_check_divergence <- function(data, species_col = "species", gene_col = "gene"
       stop("Required external tool(s) not found: ", paste(missing_tools, collapse = ", "),
            call. = FALSE)
     }
-
+    
     tryCatch({
       temp_fasta <- tempfile(fileext = ".fasta")
       temp_tree <- tempfile(fileext = ".nwk")
@@ -247,12 +261,12 @@ rb_check_divergence <- function(data, species_col = "species", gene_col = "gene"
         existing <- c(temp_fasta, temp_tree)[file.exists(c(temp_fasta, temp_tree))]
         if (length(existing) > 0) file.remove(existing)
       }, add = TRUE)
-
+      
       seqinr::write.fasta(sequences = as.list(group_data[[sequence_col]]),
-                           names = group_data[[id_col]], file.out = temp_fasta)
-
+                          names = group_data[[id_col]], file.out = temp_fasta)
+      
       system(paste(mafft, "--auto", temp_fasta, "|", fasttree, "-nt -gtr >", temp_tree))
-
+      
       if (!file.exists(temp_tree) || file.info(temp_tree)$size == 0) {
         return(data.frame(id = group_data[[id_col]], div_result = "tree_error"))
       }
@@ -260,18 +274,18 @@ rb_check_divergence <- function(data, species_col = "species", gene_col = "gene"
       if (is.null(tree) || is.null(tree$edge.length)) {
         return(data.frame(id = group_data[[id_col]], div_result = "tree_error"))
       }
-
+      
       tip_edges <- which(tree$edge[, 2] <= length(tree$tip.label))
       edge_lengths <- tree$edge.length[tip_edges]
       tip_names <- tree$tip.label[tree$edge[tip_edges, 2]]
-
+      
       if (length(edge_lengths) >= 5) {
         cutoff <- max(stats::median(edge_lengths) * outlier_mult, outlier_floor)
         outliers <- tip_names[edge_lengths > cutoff & edge_lengths > outlier_floor]
       } else {
         outliers <- character(0)
       }
-
+      
       data.frame(
         id = group_data[[id_col]],
         div_result = ifelse(group_data[[id_col]] %in% outliers, "divergent", "pass")
@@ -280,7 +294,7 @@ rb_check_divergence <- function(data, species_col = "species", gene_col = "gene"
       data.frame(id = group_data[[id_col]], div_result = "processing_error")
     })
   }
-
+  
   split_key <- paste(data[[species_col]], data[[gene_col]], sep = "___")
   groups <- split(data, split_key)
   results <- do.call(rbind, lapply(groups, check_one_group))
@@ -288,59 +302,59 @@ rb_check_divergence <- function(data, species_col = "species", gene_col = "gene"
   merge(data, results, by = id_col, all.x = TRUE)
 }
 
-#' Flag sequences with excessive ambiguous-base content (N + other
-#' IUPAC codes), based on FULL sequence length
+#' Compile QC flags and run the full QC pipeline
 #'
-#' Deliberately separate from rb_sequence_features() (R/classify.R),
-#' whose GC/AT content calculation excludes ambiguous bases from its
-#' denominator by design (a training-feature decision) rather than
-#' penalizing for them. This is a QC-oriented check, not a feature.
-rb_check_ambiguous_content <- function(sequence, max_n_fraction = 0.1) {
-  seq_upper <- toupper(sequence)
-  total_length <- nchar(seq_upper)
-  acgt_count <- stringr::str_count(seq_upper, "[ACGT]")
-  ambiguous_fraction <- ifelse(total_length > 0, 1 - (acgt_count / total_length), 0)
-  ambiguous_fraction > max_n_fraction
-}
-
-# ------------------------------------------------------------
-# rb_compile_qc_flags()
-#' Compile per-sequence QC flags from a set of logical check columns
-#' plus optional value-based extra flags
+#' @description
+#' * `rb_compile_qc_flags()`: Combines logical check columns into a
+#'   pipe-delimited `qc_flag` column.
+#' * `rb_run_qc_pipeline()`: Runs the full QC pipeline in one call.
 #'
-#' @param checks Named list: flag name -> logical column name in `data`.
-#' @param extra_flag_fn Optional `function(data) -> character vector`
-#'   for flags that depend on value matching rather than a plain
-#'   logical column (e.g. genome_flag == "missing_genes").
-# ------------------------------------------------------------
+#' @param data A data frame containing sequences and check results.
+#' @param checks Named list mapping flag names to logical column names.
+#' @param extra_flag_fn Optional function returning additional flags.
+#' @param blast_db Path to a BLAST database.
+#' @param numt_fasta Path to a NUMT FASTA file.
+#' @param species_col,gene_col,sequence_col,id_col Column names.
+#' @param min_divergence_seqs Minimum sequences for divergence analysis.
+#' @param parallel_workers Number of parallel workers.
+#' @param coding_genes,rrna_genes Gene types for checks.
+#' @param required_genome_genes Required genes for genome completeness.
+#' @param genome_gene Label for complete genome records.
+#'
+#' @return The input data frame with a `qc_flag` column added.
+#' @family quality control
+#' @name rb_qc_pipeline
+NULL
 
+#' @rdname rb_qc_pipeline
+#' @export
 rb_compile_qc_flags <- function(data,
-                                 checks = list(
-                                   contaminant = "is_contaminant",
-                                   numt = "is_numt",
-                                   internal_stop = "has_stop",
-                                   frameshifted = "frameshifted",
-                                   sequence_short = "has_short",
-                                   sequence_gap = "has_gaps"
-                                 ),
-                                 extra_flag_fn = NULL) {
+                                checks = list(
+                                  contaminant = "is_contaminant",
+                                  numt = "is_numt",
+                                  internal_stop = "has_stop",
+                                  frameshifted = "frameshifted",
+                                  sequence_short = "has_short",
+                                  sequence_gap = "has_gaps"
+                                ),
+                                extra_flag_fn = NULL) {
   flag_vec <- vapply(names(checks), function(flag_name) {
     col <- checks[[flag_name]]
     if (!col %in% names(data)) return(rep(FALSE, nrow(data)))
     val <- data[[col]]
     ifelse(is.na(val), FALSE, as.logical(val))
   }, logical(nrow(data)))
-
-  # Unconditional reshape to matrix — handles length(checks) == 1 (where
+  
+  # Unconditional reshape to matrix -- handles length(checks) == 1 (where
   # vapply would otherwise return a bare vector) identically to > 1.
   flag_matrix <- matrix(flag_vec, nrow = nrow(data), ncol = length(checks),
-                         dimnames = list(NULL, names(checks)))
-
+                        dimnames = list(NULL, names(checks)))
+  
   qc_flag <- apply(flag_matrix, 1, function(row) {
     hit <- names(checks)[row]
     if (length(hit) == 0) "" else paste(hit, collapse = "|")
   })
-
+  
   if (!is.null(extra_flag_fn)) {
     extra_flags <- extra_flag_fn(data)
     qc_flag <- ifelse(
@@ -349,26 +363,14 @@ rb_compile_qc_flags <- function(data,
       qc_flag
     )
   }
-
+  
   qc_flag[qc_flag == ""] <- "pass"
   data$qc_flag <- qc_flag
   data
 }
 
-
-# ------------------------------------------------------------
-# rb_run_qc_pipeline()
-           
-#' Run the full QC pipeline (replaces edna_ref_qc.R AND edna_ref_qc_p2.R)
-#'
-#' Call this twice in user code — once on standardized data, once on
-#' ML-classified data — rather than maintaining two separate scripts.
-#'
-#' @param parallel_workers Shared parallelism switch for contaminant
-#'   screening AND the codon/rRNA integrity checks (serial when 1,
-#'   furrr-parallel otherwise).
-# ------------------------------------------------------------
-
+#' @rdname rb_qc_pipeline
+#' @export
 rb_run_qc_pipeline <- function(data, blast_db, numt_fasta = NULL,
                                 species_col = "species", gene_col = "gene",
                                 sequence_col = "sequence", id_col = "unique_code",
@@ -390,8 +392,7 @@ rb_run_qc_pipeline <- function(data, blast_db, numt_fasta = NULL,
 
   message(">>> Screening contaminants")
   data$is_contaminant <- rb_screen_contaminants(
-    data[[sequence_col]], blast_db, parallel_workers = parallel_workers
-  )
+    data[[sequence_col]], blast_db, threads = parallel_workers)
 
   message(">>> Screening NUMTs")
   data$is_numt <- if (!is.null(numt_fasta)) {
@@ -440,7 +441,26 @@ rb_run_qc_pipeline <- function(data, blast_db, numt_fasta = NULL,
   rb_compile_qc_flags(data, extra_flag_fn = extra_fn)
 }
 
-# Helper: extra_flag_fn that replicates the original edna_ref_qc.R logic
+#' Check for excessive ambiguous-base content
+#'
+#' Internal QC check based on full sequence length.
+#'
+#' @keywords internal
+#' @noRd
+rb_check_ambiguous_content <- function(sequence, max_n_fraction = 0.1) {
+  seq_upper <- toupper(sequence)
+  total_length <- nchar(seq_upper)
+  acgt_count <- stringr::str_count(seq_upper, "[ACGT]")
+  ambiguous_fraction <- ifelse(total_length > 0, 1 - (acgt_count / total_length), 0)
+  ambiguous_fraction > max_n_fraction
+}
+
+#' Default extra flag function for QC compilation
+#'
+#' Internal helper that replicates the original edna_ref_qc.R logic.
+#'
+#' @keywords internal
+#' @noRd
 default_extra_flags <- function(data) {
   vapply(seq_len(nrow(data)), function(i) {
     flags <- c()

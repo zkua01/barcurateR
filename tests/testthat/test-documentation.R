@@ -5,7 +5,7 @@ test_that("exported functions have function-specific help topics", {
   rd <- if (length(source_root) > 0) {
     tools::Rd_db(dir = source_root[[1]])
   } else {
-    tools::Rd_db(package = "regionbarcoder")
+    tools::Rd_db(package = "barcurateR")
   }
   alias_maps <- lapply(rd, function(topic) {
     aliases <- vapply(topic[tools:::RdTags(topic) == "\\alias"], as.character, character(1))
@@ -18,7 +18,7 @@ test_that("exported functions have function-specific help topics", {
     namespace <- readLines(file.path(source_root[[1]], "NAMESPACE"))
     sub("^export\\((.*)\\)$", "\\1", grep("^export\\(", namespace, value = TRUE))
   } else {
-    getNamespaceExports("regionbarcoder")
+    getNamespaceExports("barcurateR")
   }
   missing_help <- setdiff(exported, names(alias_to_title))
   expect_equal(missing_help, character())

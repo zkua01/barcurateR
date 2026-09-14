@@ -1,35 +1,81 @@
-# ============================================================
-# R/contaminants.R
-# Contaminant reference database building (NCBI fetch + BLAST db build).
-# ============================================================
- 
-# ------------------------------------------------------------
-# rb_build_contaminant_db()
-
-#' Build contaminant reference FASTAs from an organisms table
+#' Build contaminant reference databases for QC screening
 #'
-#' @param organisms Data frame with columns:
-#'   - type: "accession" (direct entrez_fetch) or "query" (entrez_search
-#'     then fetch)
-#'   - category: output grouping (e.g. "reference_contaminant",
-#'     "lab_contaminant", "numt_source") — becomes the output filename
-#'   - value: the accession ID (type = "accession") or NCBI search
-#'     query string (type = "query")
-#' @param requests_per_second Fixed-interval throttle between NCBI
-#'   requests (unauthenticated E-utilities cap is ~3/sec).
-#' @return Named character vector of output FASTA paths, one per
-#'   category.
+#' @description
+#' Functions to download contaminant sequences from NCBI and build
+#' nucleotide BLAST databases for screening reference sequences against
+#' known contaminants (e.g., human mtDNA, lab bacteria, NUMTs).
+#'
+#' * `rb_build_contaminant_db()`: Downloads sequences from NCBI based on
+#'   an organisms table, saving one FASTA file per category.
+#' * `rb_build_blast_db()`: Combines FASTA files and builds a nucleotide
+#'   BLAST database using `makeblastdb`.
+#'
+#' @param organisms A data frame with columns:
+#'   * `type`: Either `"accession"` (direct `entrez_fetch`) or `"query"`
+#'     (`entrez_search` then fetch).
+#'   * `category`: Output grouping that becomes the FASTA filename
+#'     (e.g., `"human_mtDNA"`, `"lab_bacteria"`, `"numt_source"`).
+#'   * `value`: The accession ID (for `type = "accession"`) or NCBI
+#'     search query string (for `type = "query"`).
+#' @param out_dir Directory where output FASTA files will be saved.
+#'   Created automatically if it does not exist.
+#' @param retmax Maximum number of sequences to retrieve per NCBI search.
+#' @param requests_per_second Throttle rate between NCBI requests.
+#'   The unauthenticated E-utilities limit is approximately 3 requests
+#'   per second.
+#' @param fasta_paths Character vector of FASTA file paths to combine
+#'   and build into a BLAST database.
+#' @param out_prefix Output prefix for the BLAST database files
+#'   (e.g., `"data/contaminants/contaminant_db"`).
+#' @param title Title string embedded in the BLAST database metadata.
+#' @param makeblastdb Path to the `makeblastdb` executable.
+#' @param stream_combine Logical. If `TRUE`, combines files via chunked
+#'   streaming instead of loading them fully into memory. Recommended
+#'   for large contaminant sets.
+#'
+#' @return
+#' * `rb_build_contaminant_db()` returns a named character vector of
+#'   output FASTA file paths, one per category.
+#' * `rb_build_blast_db()` returns the `out_prefix` path invisibly.
+#'
+#' @details
+#' The typical workflow is:
+#' 1. Define an `organisms` table specifying what to download.
+#' 2. Call `rb_build_contaminant_db()` to download FASTA files.
+#' 3. Call `rb_build_blast_db()` on the relevant FASTA files to create
+#'    the BLAST database.
+#'
+#' Note: NUMT sequences are typically screened via exact substring
+#' matching (`rb_screen_numts()`) rather than BLAST, so NUMT FASTA files
+#' are usually excluded from the BLAST database.
+#'
+#' @examples
+#' \dontrun{
+#' # Define organisms to download
+#' organisms <- data.frame(
+#'   type = c("accession", "query"),
+#'   category = c("human_mtDNA", "lab_bacteria"),
+#'   value = c(
+#'     "NC_012920.1",
+#'     "(Escherichia coli[ORGN] OR Pseudomonas[ORGN]) AND 16S[GENE]"
+#'   ),
+#'   stringsAsFactors = FALSE
+#' )
+#'
+#' # Download contaminant sequences
+#' fasta_paths <- rb_build_contaminant_db(organisms, out_dir = "data/contaminants")
+#'
+#' # Build BLAST database (excluding NUMTs if present)
+#' blast_paths <- fasta_paths[!grepl("numt", names(fasta_paths))]
+#' rb_build_blast_db(blast_paths, out_prefix = "data/contaminants/contaminant_db")
+#' }
+#'
+#' @name rb_build_contaminant_db
+#' @family contaminant screening
+NULL
 
-# Generalizes all 3 hardcoded blocks (human mtDNA via a fixed
-# accession, fish NUMT source organisms via a fixed Entrez query, lab
-# bacteria via another fixed query) into one function driven by an
-# `organisms` table. Each row is either a direct accession fetch or an
-# Entrez search+fetch, tagged with a `category` that determines which
-# output FASTA it lands in — so the original's 3 fixed categories
-# (human mtDNA / fish NUMTs / lab bacteria) become just 3 example rows
-# in a caller-supplied table, not 3 hardcoded code paths.
-# ------------------------------------------------------------
- 
+#' @rdname rb_build_contaminant_db
+#' @export
 rb_build_contaminant_db <- function(organisms, out_dir, retmax = 200,
                                      requests_per_second = 3) {
   rb_required_columns(organisms, c("type", "category", "value"))
@@ -60,7 +106,7 @@ rb_build_contaminant_db <- function(organisms, out_dir, retmax = 200,
         }
       )
       if (length(search$ids) == 0) {
-        message("  No results found — skipping.")
+        message("  No results found -- skipping.")
         NULL
       } else {
         tryCatch(
@@ -95,25 +141,8 @@ rb_build_contaminant_db <- function(organisms, out_dir, retmax = 200,
   out_paths
 }
  
- 
- 
-# ------------------------------------------------------------
-# rb_build_blast_db()
-#' Combine FASTA files and build a nucleotide BLAST database
-#'
-#' @param fasta_paths Character vector of FASTA file paths to combine.
-#' @param stream_combine If TRUE, combines files via chunked
-#'   file-to-file streaming instead of loading them fully into R
-#'   memory — recommended for large/user-supplied contaminant sets.
-
-# Generalizes Stage 4's makeblastdb system call. `fasta_paths` is now a
-# list instead of the 2 hardcoded files (human_mtDNA.fasta +
-# lab_bacteria.fasta) — the caller decides which of
-# rb_build_contaminant_db()'s outputs to include (e.g. deliberately
-# excluding numt_source.fasta, matching the original script's intent
-# that NUMTs are screened separately via rb_screen_numts(), not BLAST).
-# ------------------------------------------------------------
- 
+#' @rdname rb_build_contaminant_db
+#' @export
 rb_build_blast_db <- function(fasta_paths, out_prefix, title = "Contaminant Database",
                                makeblastdb = "makeblastdb", stream_combine = FALSE) {
   if (!nzchar(Sys.which(makeblastdb))) {

@@ -1,4 +1,4 @@
 library(testthat)
-library(regionbarcoder)
+library(barcurateR)
 
-test_check("regionbarcoder")
+test_check("barcurateR")

@@ -1,33 +1,43 @@
-# ============================================================
-# MODULE 4 — ML sequence-type classifier: feature extraction, training,
-# and confidence-scored prediction. (replaces edna_ml_seq_type.R) 
-# ============================================================
+if (getRversion() >= "2.15.1") {
+  utils::globalVariables(".pred_class")
+}
 
+#' Machine learning classification of DNA sequences
+#'
+#' @description
+#' Functions to extract sequence features, train a Random Forest classifier,
+#' and predict marker types for unknown sequences based on sequence composition.
+#'
+#' * `rb_sequence_features()`: Extracts numerical features (length, GC/AT content, GC/AT skew) from DNA sequences.
+#' * `rb_train_classifier()`: Trains a Random Forest model to classify sequences into marker types using the `tidymodels` framework.
+#' * `rb_classify_sequences()`: Predicts marker types for new sequences using a trained model, applying confidence and length filtering.
+#'
+#' @param sequence A character vector of DNA sequences.
+#' @param data A data frame containing the sequences and/or features.
+#' @param label_col The name of the column in `data` containing the class labels (e.g., marker types like "12S", "COI").
+#' @param features A character vector of column names to use as predictor features.
+#' @param trees The number of trees in the Random Forest.
+#' @param mtry The number of predictors randomly sampled at each split.
+#' @param min_n The minimum number of data points in a terminal node.
+#' @param prop The proportion of data to use for the training set (the rest is used for testing).
+#' @param seed Random seed for reproducibility of the train/test split.
+#' @param model_result The output list from `rb_train_classifier()`.
+#' @param confidence_threshold Minimum prediction probability required to confidently assign a class.
+#' @param min_length Minimum sequence length (in base pairs) required for classification.
+#' @param sequence_col The name of the column in `data` containing the raw sequences.
+#' @param fallback_label The label assigned when a sequence is too short or falls below the `confidence_threshold` (default `"other"`).
+#'
+#' @return
+#' * `rb_sequence_features()` returns a data frame of computed features (`length`, `gc_content`, `at_content`, `gc_skew`, `at_skew`).
+#' * `rb_train_classifier()` returns a list containing the trained model (`workflows::workflow()` fit), performance metrics, and test set results.
+#' * `rb_classify_sequences()` returns the input `data` augmented with `predicted_class`, `confidence_score`, `final_type`, and `prediction_source` columns.
+#'
+#' @name rb_classification
+#' @family machine learning
+NULL
 
-# ------------------------------------------------------------
-# rb_sequence_features()
-# Generalizes the GC/AT content+skew feature block. This logic was
-# ALREADY DUPLICATED in the original script — once inside
-# sequential_feature_extraction() (for known/training sequences) and
-# again, nearly identically, inside the batch loop of
-# predict_unknown_sequences_with_confidence() (for unknown sequences,
-# with `seq_length` instead of `length` as the interim variable name).
-# Pulling it into one function removes that duplication, same class of
-# fix as Module 3's two-script consolidation.
-#
-# No manual batching/gc() loop here: str_count() is already vectorized
-# over the whole input, so the original hand-rolled batch_size <- 5000
-# loop is unnecessary. If you're ever working with more sequences than
-# fit in memory at once, wrap calls to this function in your own
-# chunking (e.g. split(sequence, ceiling(seq_along(sequence)/5000)))
-# rather than baking batching into the function itself.
-
-#' Denominator (gc_count + at_count) deliberately EXCLUDES ambiguous
-#' bases (N and other IUPAC codes) — this is a training-feature
-#' decision, kept as-is regardless of any separate QC-side ambiguity
-#' checks (see rb_check_ambiguous_content() in R/qc.R, which uses full
-#' sequence length instead, for a different purpose).
-# ------------------------------------------------------------
+#' @rdname rb_classification
+#' @export
 rb_sequence_features <- function(sequence) {
   seq_upper <- toupper(sequence)
 
@@ -55,29 +65,8 @@ rb_sequence_features <- function(sequence) {
 }
 
 
-
-# ------------------------------------------------------------
-# rb_train_classifier() : train a random forest sequence-type classifier
-# Generalizes Stage 3 (prepare_ml_data) + Stage 4
-# (train_sequence_classifier). `label_col` and `features` are now
-# parameters instead of the hardcoded formula
-# seq_type ~ length + gc_content + at_content + gc_skew + at_skew —
-# class labels come from whatever's actually present in data[[label_col]],
-# so a dataset using a completely different marker set (or even a
-# non-marker classification task built on the same feature columns)
-# works unchanged.
-
-#'
-#' @param label_col Column holding class labels — not hardcoded to any
-#'   specific marker set.
-#' @param features Feature columns to use, default the 5 computed by
-#'   rb_sequence_features().
-#'
-#' Requires rsample >= 1.0.0 (relies on `strata` accepting a plain
-#' string). Confirm this version against your actual target
-#' environment and adjust the guard/DESCRIPTION requirement if needed.
-# ------------------------------------------------------------
-
+#' @rdname rb_classification
+#' @export
 rb_train_classifier <- function(data,
                                 label_col = "seq_type",
                                 features = c(
@@ -176,16 +165,8 @@ rb_train_classifier <- function(data,
 }
 
 
-# ------------------------------------------------------------
-# rb_classify_sequences(): 
-#' Classify sequences using a trained model, with confidence filtering
-# Generalizes Stage 5 (predict_unknown_sequences_with_confidence).
-
-#' @param model_result Output of rb_train_classifier().
-#' @param fallback_label Label assigned when confidence is below
-#'   `confidence_threshold` or the sequence is shorter than
-#'   `min_length` (default "other").
-# ------------------------------------------------------------
+#' @rdname rb_classification
+#' @export
 rb_classify_sequences <- function(model_result, data, confidence_threshold = 0.8,
                                    min_length = 100, sequence_col = "sequence",
                                    fallback_label = "other") {
@@ -197,9 +178,6 @@ rb_classify_sequences <- function(model_result, data, confidence_threshold = 0.8
   pred_class <- stats::predict(fit, new_data = features, type = "class")
   pred_prob <- stats::predict(fit, new_data = features, type = "prob")
 
-  # max_prob computed across EVERY .pred_* column actually present,
-  # rather than hardcoding class names (e.g. .pred_12S/.pred_16S/
-  # .pred_COI) — required for this to work on any dataset's class set.
   prob_cols <- pred_prob[, grepl("^\\.pred_", names(pred_prob)), drop = FALSE]
   max_prob <- do.call(pmax, prob_cols)
 

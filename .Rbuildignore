@@ -14,3 +14,5 @@
 ^Meta$
 ^_pkgdown\.yml$
 ^pkgdown$
+^data-raw$
+^manuscript$

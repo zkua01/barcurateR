@@ -1,3 +1,96 @@
+#' Query and filter a curated reference database
+#'
+#' @description
+#' Functions to retrieve, filter, and inspect reference sequences from a
+#' barcurateR SQLite database or an in-memory data frame.
+#'
+#' * `rb_get_sequences()`: Retrieves sequences from a SQLite database with
+#'   optional taxonomic, marker, source, occurrence, and QC filters.
+#' * `rb_list_taxa()`: Lists taxa at a given taxonomic rank with sequence
+#'   counts.
+#' * `rb_filter_reference()`: Filters an in-memory reference data frame
+#'   using the same criteria as the database query functions.
+#' * `rb_taxonomy()`: Retrieves distinct taxonomy records from the database.
+#'
+#' @param con A `DBIConnection` object to an open barcurateR SQLite database.
+#' @param data A data frame containing reference sequences (for
+#'   `rb_filter_reference()`).
+#' @param species,genus,family Optional character vectors to filter by
+#'   taxonomic rank.
+#' @param marker Optional character vector of marker types to filter by
+#'   (e.g., `"COI"`, `"12S"`). Maps to the `seq_type` column.
+#' @param source Optional character vector of source names to filter by
+#'   (e.g., `"ncbi"`, `"bold"`).
+#' @param occurrence Optional character vector of occurrence categories
+#'   to filter by (e.g., `"native"`, `"introduced"`).
+#' @param qc_flag QC flag filter. Default `"pass"`. When `exact = FALSE`,
+#'   non-`"pass"` values are matched using SQL `LIKE '%value%'`. When
+#'   `exact = TRUE`, exact equality is used. Set to `NULL` to skip
+#'   QC filtering.
+#' @param exact Logical. If `TRUE`, use exact matching for `qc_flag`
+#'   filters. If `FALSE` (default), use pattern matching for non-`"pass"`
+#'   flags.
+#' @param rank Taxonomic rank for `rb_list_taxa()`. One of `"kingdom"`,
+#'   `"phylum"`, `"class"`, `"order"`, `"family"`, `"genus"`, or
+#'   `"species"`. Default `"species"`.
+#' @param table_name Name of the reference table to query.
+#'   Default `"reference_final"`.
+#' @param min_length,max_length Optional minimum and maximum sequence
+#'   length filters for `rb_filter_reference()`.
+#'
+#' @return
+#' * `rb_get_sequences()` returns a data frame of reference sequences
+#'   matching the filter criteria.
+#' * `rb_list_taxa()` returns a data frame with columns for the requested
+#'   rank and `n_sequences`.
+#' * `rb_filter_reference()` returns a filtered data frame.
+#' * `rb_taxonomy()` returns a data frame of distinct taxonomy records
+#'   with all seven ranks plus optional `occurrence` and `habitat` columns.
+#'
+#' @details
+#' All database query functions use the generic table name
+#' `"reference_final"` by default. This can be overridden via the
+#' `table_name` parameter.
+#'
+#' `rb_get_sequences()` and `rb_list_taxa()` filter on `qc_flag = 'pass'`
+#' by default, ensuring only quality-checked sequences are returned.
+#' Set `qc_flag = NULL` to retrieve all sequences regardless of QC status.
+#'
+#' `rb_taxonomy()` requires all seven taxonomic ranks (`kingdom` through
+#' `species`) to be present in the table. The columns `occurrence` and
+#' `habitat` are included in the output if they exist in the table.
+#'
+#' @examples
+#' \dontrun{
+#' con <- rb_connect()
+#'
+#' # Get all passing COI sequences
+#' coi <- rb_get_sequences(con, marker = "COI")
+#'
+#' # List all species with sequence counts
+#' taxa <- rb_list_taxa(con, rank = "species")
+#'
+#' # Get taxonomy for a specific species
+#' tax <- rb_taxonomy(con, species = "Danio rerio")
+#'
+#' # Filter an in-memory data frame
+#' filtered <- rb_filter_reference(refs, marker = "12S", min_length = 100)
+#'
+#' rb_disconnect(con)
+#' }
+#'
+#' @name rb_query
+#' @family database queries
+NULL
+
+#' Build SQL WHERE conditions for reference queries
+#'
+#' Internal helper that constructs SQL filter clauses from named
+#' parameters. Used by `rb_get_sequences()`, `rb_list_taxa()`, and
+#' `rb_taxonomy()`.
+#'
+#' @keywords internal
+#' @noRd
 rb_sql_conditions <- function(con, species = NULL, genus = NULL, family = NULL,
                               marker = NULL, source = NULL, occurrence = NULL,
                               qc_flag = NULL, exact = FALSE) {
@@ -44,6 +137,8 @@ rb_sql_conditions <- function(con, species = NULL, genus = NULL, family = NULL,
   conditions[!is.na(conditions) & nzchar(conditions)]
 }
 
+#' @rdname rb_query
+#' @export
 rb_get_sequences <- function(con, species = NULL, genus = NULL, family = NULL,
                              marker = NULL, source = NULL, occurrence = NULL,
                              qc_flag = "pass", exact = FALSE,
@@ -60,6 +155,8 @@ rb_get_sequences <- function(con, species = NULL, genus = NULL, family = NULL,
   DBI::dbGetQuery(con, sql)
 }
 
+#' @rdname rb_query
+#' @export
 rb_list_taxa <- function(con, rank = "species", occurrence = NULL, marker = NULL, qc_flag = "pass", exact = FALSE, table_name = "reference_final") {
   valid <- c("kingdom", "phylum", "class", "order", "family", "genus", "species")
   if (!rank %in% valid) stop("Unsupported rank: ", rank, call. = FALSE)
@@ -74,6 +171,8 @@ rb_list_taxa <- function(con, rank = "species", occurrence = NULL, marker = NULL
   DBI::dbGetQuery(con, sql)
 }
 
+#' @rdname rb_query
+#' @export
 rb_filter_reference <- function(data, marker = NULL, source = NULL, occurrence = NULL, min_length = NULL, max_length = NULL, qc_flag = "pass", exact = FALSE) {
   out <- data
   if (!is.null(marker)) out <- out[out$seq_type %in% marker, , drop = FALSE]
@@ -103,6 +202,8 @@ rb_filter_reference <- function(data, marker = NULL, source = NULL, occurrence =
   out
 }
 
+#' @rdname rb_query
+#' @export
 rb_taxonomy <- function(con, species = NULL, qc_flag = "pass", exact = FALSE, table_name = "reference_final") {
   if (!table_name %in% DBI::dbListTables(con)) {
     stop("Table not found: ", table_name, call. = FALSE)
