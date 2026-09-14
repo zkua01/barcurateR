@@ -1,16 +1,15 @@
 Package: barcurateR
-Title: Standardize, Curate, Audit, and Deploy DNA reference databases
+Title: Standardize, Curate, Audit, and Deploy DNA Reference Databases
 Version: 0.1.0
 Authors@R: c(
-    person("Zi Xun", "Kua", email = "zixunkua@gmail.com",role = c("aut", "cre")),
-    person("Katja", "Pogacar",  role = "aut"),
+    person("Zi Xun", "Kua", email = "zixunkua@gmail.com", role = c("aut", "cre")),
+    person("Katja", "Pogacar", role = "aut"),
     person("Guohuan", "Su", role = "aut"))
-Author: Zi Xun Kua [aut, cre], Katja Pogacar [aut], Guohuan Su [aut]
-Maintainer: Zi Xun Kua <zixunkua@gmail.com>
-Description: Provides tools to standardize, curate, query, audit, and export DNA reference databases,
-    and assign amplicon sequence variants for ecological metabarcoding in a reproducible manner. 
-    The package is optimized for reference sequence tables from four public repositories: NCBI GeneBank,
-    BOLD, MIDORI2, MitoFish.
+Description: Provides tools to standardize, curate, query, audit, and export 
+    DNA reference databases, and assign amplicon sequence variants for 
+    ecological metabarcoding in a reproducible manner. The package includes 
+    a high-level curation wrapper, quality control pipelines, ML-based 
+    marker classification, and barcode gap analysis.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
@@ -19,14 +18,38 @@ Depends: R (>= 4.1)
 Imports:
     DBI,
     RSQLite,
-    tools
+    Biostrings,
+    DECIPHER,
+    ape,
+    seqinr,
+    dplyr,
+    magrittr,
+    rlang,
+    stringr,
+    stringi,
+    tidyr,
+    purrr,
+    tools,
+    utils,
+    stats
 Suggests:
     testthat (>= 3.0.0),
     withr,
     knitr,
     rmarkdown,
-    tidyverse,
-    Biostrings,
+    parsnip,
+    recipes,
+    workflows,
+    rsample,
+    yardstick,
+    ranger,
+    rentrez,
+    httr,
+    readr,
+    future,
+    furrr,
+    pbapply,
+    parallel,
     ggpubr
 Config/testthat/edition: 3
 VignetteBuilder: knitr
