@@ -1,4 +1,4 @@
-rb_marker_coverage <- function(con, rank = "species", table_name = "yzfishdb_final") {
+rb_marker_coverage <- function(con, rank = "species", table_name = "reference_final") {
   valid <- c("species", "genus", "family", "order")
   if (!rank %in% valid) stop("Unsupported rank: ", rank, call. = FALSE)
   rank_sql <- as.character(DBI::dbQuoteIdentifier(con, rank))
@@ -12,7 +12,7 @@ rb_marker_coverage <- function(con, rank = "species", table_name = "yzfishdb_fin
   DBI::dbGetQuery(con, sql)
 }
 
-rb_source_coverage <- function(con, table_name = "yzfishdb_final") {
+rb_source_coverage <- function(con, table_name = "reference_final") {
   tbl <- DBI::dbQuoteIdentifier(con, table_name)
   DBI::dbGetQuery(con, paste(
     "select source, seq_type, count(*) as n_sequences,",
@@ -22,7 +22,7 @@ rb_source_coverage <- function(con, table_name = "yzfishdb_final") {
   ))
 }
 
-rb_qc_summary <- function(con, table_name = "yzfishdb_final", qc_table_name = "qc_reference_p2") {
+rb_qc_summary <- function(con, table_name = "reference_final", qc_table_name = "qc_reference") {
   tbl <- DBI::dbQuoteIdentifier(con, table_name)
   qc_tbl <- DBI::dbQuoteIdentifier(con, qc_table_name)
   if (qc_table_name %in% DBI::dbListTables(con)) {

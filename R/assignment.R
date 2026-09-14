@@ -153,7 +153,8 @@ rb_assign_edna <- function(asv_fasta, con = NULL, db_path = NULL, marker = NULL,
                            method = c("blastn", "exact"), min_identity = 99,
                            min_coverage = 0.9, max_target_seqs = 100,
                            out_dir = tempfile("barcurateR_assign_"),
-                           blastn = "blastn", makeblastdb = "makeblastdb") {
+                           blastn = "blastn", makeblastdb = "makeblastdb",
+                           table_name = "reference_final") {
   method <- match.arg(method)
   own_connection <- FALSE
   if (is.null(con)) {
@@ -162,7 +163,7 @@ rb_assign_edna <- function(asv_fasta, con = NULL, db_path = NULL, marker = NULL,
   }
   on.exit(if (own_connection) rb_disconnect(con), add = TRUE)
   asvs <- rb_read_fasta(asv_fasta)
-  refs <- rb_get_sequences(con, marker = marker)
+  refs <- rb_get_sequences(con, marker = marker, table_name = table_name)
   refs$sequence <- rb_clean_sequence(refs$sequence)
   if (method == "exact") {
     hits <- rb_exact_hits(asvs, refs)

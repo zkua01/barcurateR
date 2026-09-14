@@ -1,5 +1,5 @@
 rb_available_datasets <- function() {
-  demo_path <- system.file("extdata", "small_yzfishdb.sqlite", package = "barcurateR")
+  demo_path <- system.file("extdata", "small_refdb.sqlite", package = "barcurateR")
   if (!nzchar(demo_path)) {
     demo_path <- rb_find_full_yzfishdb()
   }
@@ -7,7 +7,7 @@ rb_available_datasets <- function() {
     demo_path <- rb_demo_db_path()
   }
   data.frame(
-    name = "small_yzfishdb",
+    name = "small_refdb",
     version = if (grepl("YZFishDB[.]db$", demo_path)) "full-local" else "demo",
     path = demo_path,
     stringsAsFactors = FALSE

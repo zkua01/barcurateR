@@ -26,6 +26,38 @@ rb_diagnostic_sites <- function(focal_seqs, other_seqs, min_freq = 0.9, max_othe
 }
 
 # ------------------------------------------------------------
+# rb_string_dist()
+#
+# Wrapper around pairwise distance calculation.
+#
+# Biostrings::stringDist() was moved to the pwalign package
+# and is formally defunct in Biostrings >= 2.77.1.
+#
+# This helper prefers pwalign::stringDist(), but falls back to
+# Biostrings::stringDist() on older Biostrings versions.
+# ------------------------------------------------------------
+
+rb_string_dist <- function(x, method = "hamming") {
+  if (requireNamespace("pwalign", quietly = TRUE)) {
+    return(pwalign::stringDist(x, method = method))
+  }
+  
+  if (requireNamespace("Biostrings", quietly = TRUE)) {
+    biostrings_version <- utils::packageVersion("Biostrings")
+    
+    if (biostrings_version < "2.77.1") {
+      return(Biostrings::stringDist(x, method = method))
+    }
+  }
+  
+  stop(
+    "Pairwise distance calculation requires the Bioconductor package 'pwalign'. ",
+    "Install it with BiocManager::install('pwalign').",
+    call. = FALSE
+  )
+}
+
+# ------------------------------------------------------------
 # rb_barcode_gap_species()
 #' Compute barcode gap metrics for one species within an aligned marker set
 #'
@@ -44,7 +76,7 @@ rb_diagnostic_sites <- function(focal_seqs, other_seqs, min_freq = 0.9, max_othe
 rb_barcode_gap_species <- function(species_name, data, aligned_seqs, seq_len,
                                     species_col = "species", genus_col = "genus",
                                     marker = NA_character_,
-                                    min_seqs = 5,
+                                    min_seqs = 2,
                                     max_other = 2000, max_congeners = 500) {
   focal_idx <- which(data[[species_col]] == species_name)
   n_focal <- length(focal_idx)
@@ -79,10 +111,10 @@ rb_barcode_gap_species <- function(species_name, data, aligned_seqs, seq_len,
     focal_dna <- Biostrings::DNAStringSet(focal_seqs)
     combined_global <- Biostrings::DNAStringSet(c(focal_seqs, other_seqs))
 
-    intra_dist <- as.matrix(Biostrings::stringDist(focal_dna, method = "hamming")) / seq_len
+    intra_dist <- as.matrix(rb_string_dist(focal_dna, method = "hamming")) / seq_len
     max_intra <- max(intra_dist[upper.tri(intra_dist)], na.rm = TRUE)
 
-    all_dist_global <- as.matrix(Biostrings::stringDist(combined_global, method = "hamming")) / seq_len
+    all_dist_global <- as.matrix(rb_string_dist(combined_global, method = "hamming")) / seq_len
     focal_other_dist <- all_dist_global[1:n_focal, (n_focal + 1):ncol(all_dist_global)]
     min_inter <- min(focal_other_dist, na.rm = TRUE)
 
@@ -97,7 +129,7 @@ rb_barcode_gap_species <- function(species_name, data, aligned_seqs, seq_len,
 
     if (!is.null(congener_seqs)) {
       combined_cong <- Biostrings::DNAStringSet(c(focal_seqs, congener_seqs))
-      cong_dist <- as.matrix(Biostrings::stringDist(combined_cong, method = "hamming")) / seq_len
+      cong_dist <- as.matrix(rb_string_dist(combined_cong, method = "hamming")) / seq_len
       focal_cong_dist <- cong_dist[1:n_focal, (n_focal + 1):ncol(cong_dist)]
       min_congeneric <- min(focal_cong_dist, na.rm = TRUE)
       congeneric_gap <- min_congeneric - max_intra
@@ -179,7 +211,7 @@ rb_run_barcode_gap <- function(data, markers = c("COI", "12S", "16S", "genome"),
                                 species_col = "species", genus_col = NULL,
                                 gene_col = "seq_type", sequence_col = "sequence",
                                 qc_flag_col = "qc_flag", min_seqs = 5,
-                                parallel = TRUE, n_workers = NULL) {
+                                parallel = TRUE, n_workers = NULL, remove_gaps = TRUE) {
   rb_required_columns(data, c(species_col, gene_col, sequence_col))
 
   if (is.null(genus_col) || !genus_col %in% names(data)) {
@@ -193,6 +225,9 @@ rb_run_barcode_gap <- function(data, markers = c("COI", "12S", "16S", "genome"),
     db <- data[data[[gene_col]] == marker, , drop = FALSE]
     if (!is.null(qc_flag_col) && qc_flag_col %in% names(db)) {
       db <- db[db[[qc_flag_col]] == "pass", , drop = FALSE]
+    }
+    if (isTRUE(remove_gaps)){
+      db[[sequence_col]] <- gsub("-", "", db[[sequence_col]], fixed = TRUE)
     }
     species_counts <- table(db[[species_col]])
     db <- db[db[[species_col]] %in% names(species_counts[species_counts >= min_seqs]), , drop = FALSE]

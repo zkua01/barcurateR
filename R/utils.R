@@ -176,3 +176,75 @@ rb_standardize_columns <- function(raw, column_map) {
   
   out
 }
+
+rb_required_taxonomy_columns <- function(data) {
+  required <- c(
+    "kingdom",
+    "phylum",
+    "class",
+    "order",
+    "family",
+    "genus",
+    "species"
+  )
+  
+  missing <- setdiff(required, names(data))
+  
+  if (length(missing) > 0) {
+    stop(
+      "Missing required taxonomy columns: ",
+      paste(missing, collapse = ", "),
+      ". The final reference table requires full taxonomy from species to kingdom. ",
+      "Only occurrence and habitat are optional.",
+      call. = FALSE
+    )
+  }
+  
+  invisible(TRUE)
+}
+
+rb_detect_ambiguity <- function(data,
+                                species_col = "species",
+                                sequence_col = "sequence") {
+  rb_required_columns(data, c(species_col, sequence_col))
+  
+  if (nrow(data) == 0) {
+    data$is_ambiguous <- logical(0)
+    return(data)
+  }
+  
+  seq_clean <- rb_clean_sequence(data[[sequence_col]])
+  
+  species_by_seq <- split(data[[species_col]], seq_clean)
+  
+  ambiguous_sequences <- names(species_by_seq)[
+    vapply(
+      species_by_seq,
+      function(x) length(unique(stats::na.omit(x))) > 1,
+      logical(1)
+    )
+  ]
+  
+  data$is_ambiguous <- seq_clean %in% ambiguous_sequences
+  
+  data
+}
+
+rb_write_ambiguity_csv <- function(data,
+                                   path = "ambiguous_sequences.csv") {
+  utils::write.csv(data, path, row.names = FALSE)
+  invisible(path)
+}
+
+rb_read_ambiguity_csv <- function(path = "ambiguous_sequences.csv") {
+  if (!file.exists(path)) {
+    stop("Ambiguity file not found: ", path, call. = FALSE)
+  }
+  
+  utils::read.csv(
+    path,
+    stringsAsFactors = FALSE,
+    check.names = FALSE
+  )
+}
+

@@ -78,52 +78,93 @@ rb_sequence_features <- function(sequence) {
 #' environment and adjust the guard/DESCRIPTION requirement if needed.
 # ------------------------------------------------------------
 
-rb_train_classifier <- function(data, label_col = "seq_type",
-                                 features = c("length", "gc_content", "at_content",
-                                              "gc_skew", "at_skew"),
-                                 trees = 500, mtry = 3, min_n = 5,
-                                 prop = 0.8, seed = 123) {
+rb_train_classifier <- function(data,
+                                label_col = "seq_type",
+                                features = c(
+                                  "length",
+                                  "gc_content",
+                                  "at_content",
+                                  "gc_skew",
+                                  "at_skew"
+                                ),
+                                trees = 500,
+                                mtry = 3,
+                                min_n = 5,
+                                prop = 0.8,
+                                seed = 123) {
+  
   rb_required_columns(data, c(label_col, features))
-
-  if (utils::packageVersion("rsample") < "1.0.0") {
+  
+  data[[label_col]] <- factor(data[[label_col]])
+  
+  if (nlevels(data[[label_col]]) < 2) {
     stop(
-      "rb_train_classifier() requires rsample >= 1.0.0 (relies on ",
-      "passing `strata` as a plain string). Installed version: ",
-      utils::packageVersion("rsample"), ". Please update rsample.",
+      "At least two classes are required to train a sequence classifier.",
       call. = FALSE
     )
   }
-
-  data[[label_col]] <- factor(data[[label_col]])
-
+  
   set.seed(seed)
-  split <- rsample::initial_split(data, strata = label_col, prop = prop)
+  
+  split <- rsample::initial_split(data, strata = !!rlang::sym(label_col), prop = prop)
   train_data <- rsample::training(split)
   test_data <- rsample::testing(split)
-
-  model_formula <- stats::as.formula(paste(label_col, "~", paste(features, collapse = " + ")))
-
+  
+  model_formula <- stats::as.formula(
+    paste(label_col, "~", paste(features, collapse = " + "))
+  )
+  
   recipe <- recipes::recipe(model_formula, data = train_data) %>%
-    recipes::step_normalize(recipes::all_numeric_predictors()) %>%
-    recipes::step_zv(recipes::all_predictors())
-
-  rf_spec <- parsnip::rand_forest(mtry = mtry, trees = trees, min_n = min_n) %>%
+    recipes::step_zv(recipes::all_predictors()) %>%
+    recipes::step_normalize(recipes::all_numeric_predictors())
+  
+  rf_spec <- parsnip::rand_forest(
+    mtry = mtry,
+    trees = trees,
+    min_n = min_n
+  ) %>%
     parsnip::set_engine("ranger", importance = "permutation") %>%
     parsnip::set_mode("classification")
-
+  
   rf_workflow <- workflows::workflow() %>%
     workflows::add_recipe(recipe) %>%
     workflows::add_model(rf_spec)
-
+  
   fit <- workflows::fit(rf_workflow, train_data)
-
+  
   class_preds <- stats::predict(fit, test_data)
   prob_preds <- stats::predict(fit, new_data = test_data, type = "prob")
-  test_results <- dplyr::bind_cols(class_preds, prob_preds, test_data[label_col])
-
-  metrics <- yardstick::metrics(test_results, truth = !!rlang::sym(label_col), estimate = .pred_class)
-  conf_matrix <- yardstick::conf_mat(test_results, truth = !!rlang::sym(label_col), estimate = .pred_class)
-
+  
+  test_results <- dplyr::bind_cols(
+    class_preds,
+    prob_preds,
+    test_data[label_col]
+  )
+  
+  metrics <- NULL
+  conf_matrix <- NULL
+  
+  # Only compute metrics if the test set contains at least two classes.
+  if (nlevels(droplevels(test_data[[label_col]])) >= 2) {
+    metrics <- tryCatch(
+      yardstick::metrics(
+        test_results,
+        truth = !!rlang::sym(label_col),
+        estimate = .pred_class
+      ),
+      error = function(e) NULL
+    )
+    
+    conf_matrix <- tryCatch(
+      yardstick::conf_mat(
+        test_results,
+        truth = !!rlang::sym(label_col),
+        estimate = .pred_class
+      ),
+      error = function(e) NULL
+    )
+  }
+  
   list(
     model = fit,
     metrics = metrics,

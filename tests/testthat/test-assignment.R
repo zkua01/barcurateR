@@ -1,14 +1,14 @@
 test_that("rb_assign_edna assigns exact ASV matches to YZFishDB species", {
   con <- rb_connect()
   on.exit(rb_disconnect(con), add = TRUE)
-  refs <- head(rb_get_sequences(con, marker = "12S", species = "Abbottina rivularis"), 1)
+  refs <- head(rb_get_sequences(con, marker = "12S", species = "Alligator sinensis"), 1)
   asv_file <- tempfile(fileext = ".fasta")
   writeLines(c(">ASV_001", refs$sequence[[1]]), asv_file, useBytes = TRUE)
 
   assigned <- rb_assign_edna(asv_file, con = con, marker = "12S", method = "exact")
 
   expect_equal(assigned$asv_id, "ASV_001")
-  expect_equal(assigned$species, "Abbottina rivularis")
+  expect_equal(assigned$species, "Alligator sinensis")
   expect_equal(assigned$confidence, "high")
   expect_equal(assigned$assignment_status, "unique")
 })

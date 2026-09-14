@@ -47,7 +47,7 @@ rb_sql_conditions <- function(con, species = NULL, genus = NULL, family = NULL,
 rb_get_sequences <- function(con, species = NULL, genus = NULL, family = NULL,
                              marker = NULL, source = NULL, occurrence = NULL,
                              qc_flag = "pass", exact = FALSE,
-                             table_name = "yzfishdb_final") {
+                             table_name = "reference_final") {
   conditions <- rb_sql_conditions(
     con, species = species, genus = genus, family = family,
     marker = marker, source = source, occurrence = occurrence, qc_flag = qc_flag, exact = exact
@@ -60,7 +60,7 @@ rb_get_sequences <- function(con, species = NULL, genus = NULL, family = NULL,
   DBI::dbGetQuery(con, sql)
 }
 
-rb_list_taxa <- function(con, rank = "species", occurrence = NULL, marker = NULL, qc_flag = "pass", exact = FALSE, table_name = "yzfishdb_final") {
+rb_list_taxa <- function(con, rank = "species", occurrence = NULL, marker = NULL, qc_flag = "pass", exact = FALSE, table_name = "reference_final") {
   valid <- c("kingdom", "phylum", "class", "order", "family", "genus", "species")
   if (!rank %in% valid) stop("Unsupported rank: ", rank, call. = FALSE)
   rank_sql <- DBI::dbQuoteIdentifier(con, rank)
@@ -103,12 +103,28 @@ rb_filter_reference <- function(data, marker = NULL, source = NULL, occurrence =
   out
 }
 
-rb_taxonomy <- function(con, species = NULL, qc_flag = "pass", exact = FALSE, table_name = "yzfishdb_final") {
-  conditions <- rb_sql_conditions(con, species = species, qc_flag = qc_flag, exact = exact)
+rb_taxonomy <- function(con, species = NULL, qc_flag = "pass", exact = FALSE, table_name = "reference_final") {
+  if (!table_name %in% DBI::dbListTables(con)) {
+    stop("Table not found: ", table_name, call. = FALSE)
+  }
+  fields <- DBI::dbListFields(con, table_name)
+  tax_ranks <- c("kingdom","phylum","class","order","family","genus","species")
+  missing_tax <- setdiff(tax_ranks, fields)
+  if (length(missing_tax)>0){
+    stop("Reference table is missing required taxonomy columns: ",
+         paste(missing_tax, collapse = ", "),
+         call. = FALSE)
+  }
+  optional_cols <- intersect(c("occurrence","habitat"), fields)
+  select_cols <- c(tax_ranks, optional_cols)
+  
+  use_qc <- !is.null(qc_flag) && "qc_flag" %in% fields
+  
+  conditions <- rb_sql_conditions(con, species = species, qc_flag = if (use_qc) qc_flag else NULL, exact = exact)
   tbl <- DBI::dbQuoteIdentifier(con, table_name)
   order_col <- DBI::dbQuoteIdentifier(con, "order")
   sql <- paste(
-    "select distinct kingdom, phylum, class,", order_col, ", family, genus, species, occurrence, habitat from", tbl
+    "select distinct", paste(as.character(DBI::dbQuoteIdentifier(con, select_cols)), collapse = ", "), "from", tbl
   )
   if (length(conditions) > 0) sql <- paste(sql, "where", paste(conditions, collapse = " and "))
   DBI::dbGetQuery(con, sql)

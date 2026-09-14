@@ -1,66 +1,165 @@
-source_db <- file.path("..", "zenodo", "data", "YZFishDB.db")
-out_db <- Sys.getenv("RB_OUT_DB", file.path("inst", "extdata", "small_yzfishdb.sqlite"))
-if (!file.exists(source_db)) {
-  source_db <- file.path("zenodo", "data", "YZFishDB.db")
-}
-stopifnot(file.exists(source_db))
+# ============================================================
+# data-raw/build-small-demo-data.R
+#
+# Builds the small demo SQLite database from the committed
+# fixture files using the full curation pipeline.
+#
+#
+# Output:
+#   inst/extdata/small_refdb.sqlite
+# ============================================================
 
+devtools::load_all()
+
+# ----------------------------------------------------------
+# 1. Locate fixture files
+# ----------------------------------------------------------
+
+ncbi_path <- file.path("tests", "testthat", "fixtures", "ncbi_marker_sequences.csv")
+bold_path <- file.path("tests", "testthat", "fixtures", "bold_coi_sequences.tsv")
+tax_path  <- file.path("tests", "testthat", "fixtures", "quick_taxonomy.csv")
+
+stopifnot(file.exists(ncbi_path))
+stopifnot(file.exists(bold_path))
+stopifnot(file.exists(tax_path))
+
+# ----------------------------------------------------------
+# 2. Load fixture data
+# ----------------------------------------------------------
+
+ncbi_raw <- readr::read_csv(ncbi_path, show_col_types = FALSE)
+bold_raw <- readr::read_tsv(bold_path, show_col_types = FALSE)
+taxonomy_table <- readr::read_csv(tax_path, show_col_types = FALSE)
+
+message("Loaded ", nrow(ncbi_raw), " NCBI records")
+message("Loaded ", nrow(bold_raw), " BOLD records")
+message("Loaded ", nrow(taxonomy_table), " taxonomy entries")
+
+# ----------------------------------------------------------
+# 3. Clean NCBI fixture
+# ----------------------------------------------------------
+
+# Remove predicted / non-reference records
+bad_pattern <- paste0(
+  "PREDICTED|mRNA|synthetic construct|",
+  "uncultured|environmental sample|vector"
+)
+
+ncbi_raw <- ncbi_raw[
+  !grepl(bad_pattern, ncbi_raw$description, ignore.case = TRUE),
+  ,
+  drop = FALSE
+]
+
+# Keep only one record per accession
+ncbi_raw <- ncbi_raw[!duplicated(ncbi_raw$sequence_id), , drop = FALSE]
+
+# Use marker_query as the description for marker extraction
+ncbi_raw$description <- ncbi_raw$marker_query
+
+message("After cleaning: ", nrow(ncbi_raw), " NCBI records")
+
+# ----------------------------------------------------------
+# 4. Prepare BOLD fixture
+# ----------------------------------------------------------
+
+bold_raw$description <- "COI"
+
+# ----------------------------------------------------------
+# 5. Parse and standardize sources
+# ----------------------------------------------------------
+
+ncbi_parsed <- rb_parse_source_table(
+  ncbi_raw,
+  source_name = "ncbi",
+  column_map = c(
+    sequence_id = "sequence_id",
+    species = "species_query",
+    sequence = "sequence"
+  ),
+  description_col = "description"
+)
+
+bold_parsed <- rb_parse_source_table(
+  bold_raw,
+  source_name = "bold",
+  column_map = c(
+    sequence_id = "processid",
+    species = "species",
+    sequence = "nuc"
+  ),
+  description_col = "description"
+)
+
+message("Parsed ", nrow(ncbi_parsed), " NCBI sequences")
+message("Parsed ", nrow(bold_parsed), " BOLD sequences")
+
+# ----------------------------------------------------------
+# 6. Combine sources
+# ----------------------------------------------------------
+
+combined <- rb_combine_sources(
+  list(ncbi_parsed, bold_parsed),
+  species_col = "species",
+  sequence_col = "sequence"
+)
+
+message("Combined: ", nrow(combined), " sequences")
+
+# ----------------------------------------------------------
+# 7. Resolve ambiguities
+# ----------------------------------------------------------
+
+combined <- rb_resolve_ambiguous(
+  combined,
+  on_unresolved = "drop"
+)
+
+message("After ambiguity resolution: ", nrow(combined), " sequences")
+
+# ----------------------------------------------------------
+# 8. Run curation pipeline
+# ----------------------------------------------------------
+
+out_db <- file.path("inst", "extdata", "small_refdb.sqlite")
 dir.create(dirname(out_db), recursive = TRUE, showWarnings = FALSE)
-if (file.exists(out_db)) unlink(out_db)
-source_db <- normalizePath(source_db, winslash = "/", mustWork = TRUE)
-out_db <- normalizePath(out_db, winslash = "/", mustWork = FALSE)
 
-src <- DBI::dbConnect(RSQLite::SQLite(), source_db)
-dst <- DBI::dbConnect(RSQLite::SQLite(), out_db)
-on.exit({
-  DBI::dbDisconnect(src)
-  DBI::dbDisconnect(dst)
-}, add = TRUE)
+if (file.exists(out_db)) {
+  unlink(out_db)
+}
 
-species <- c(
-  "Abbottina rivularis",
-  "Acanthogobius elongatus",
-  "Siniperca chuatsi",
-  "Hypophthalmichthys molitrix",
-  "Oryzias sinensis"
+result <- rb_curate_reference(
+  data = combined,
+  taxonomy_table = taxonomy_table,
+  run_classifier = FALSE,
+  run_divergence = FALSE,
+  run_barcode_gap = FALSE,
+  db_path = out_db,
+  check_ambiguity = TRUE,
+  on_ambiguous = "stop",
+  require_taxonomy = TRUE
 )
-quoted <- paste(DBI::dbQuoteString(src, species), collapse = ",")
 
-final_sql <- paste0(
-  "select * from yzfishdb_final where species in (", quoted, ") ",
-  "and seq_type in ('12S','16S','COI') limit 120"
-)
-final <- DBI::dbGetQuery(src, final_sql)
-DBI::dbWriteTable(dst, "yzfishdb_final", final)
+# ----------------------------------------------------------
+# 9. Verify output
+# ----------------------------------------------------------
 
-raw <- DBI::dbGetQuery(src, paste0(
-  "select * from yzfishdb_raw where species in (", quoted, ") limit 120"
-))
-DBI::dbWriteTable(dst, "yzfishdb_raw", raw)
+con <- DBI::dbConnect(RSQLite::SQLite(), out_db)
+tables <- DBI::dbListTables(con)
+DBI::dbDisconnect(con)
 
-qc <- DBI::dbGetQuery(src, paste0(
-  "select * from qc_reference_p2 where species in (", quoted, ") limit 120"
-))
-DBI::dbWriteTable(dst, "qc_reference_p2", qc)
+message("\n==================================================")
+message("Demo database created: ", out_db)
+message("Tables: ", paste(tables, collapse = ", "))
+message("Final sequences: ", nrow(result$final_data))
+message("==================================================")
 
-barcode_path <- file.path("..", "zenodo", "data", "barcode_gap_metrics_enhanced.csv")
-if (!file.exists(barcode_path)) {
-  barcode_path <- file.path("zenodo", "data", "barcode_gap_metrics_enhanced.csv")
-}
-if (file.exists(barcode_path)) {
-  barcode <- utils::read.csv(barcode_path, stringsAsFactors = FALSE)
-  barcode <- barcode[barcode$species %in% species, , drop = FALSE]
-  DBI::dbWriteTable(dst, "barcode_gap_metrics", barcode)
-}
+# Print species and marker summary
+species_summary <- table(result$final_data$species)
+marker_summary <- table(result$final_data$seq_type)
 
-amb_path <- file.path("..", "zenodo", "data", "ambiguous_sequences_tbl_cleaned.csv")
-if (!file.exists(amb_path)) {
-  amb_path <- file.path("zenodo", "data", "ambiguous_sequences_tbl_cleaned.csv")
-}
-if (file.exists(amb_path)) {
-  amb <- utils::read.csv(amb_path, stringsAsFactors = FALSE)
-  amb <- head(amb, 50)
-  DBI::dbWriteTable(dst, "ambiguous_sequences", amb)
-}
+message("\nSpecies distribution:")
+print(species_summary)
 
-message("Created ", out_db, " with ", nrow(final), " final reference rows.")
+message("\nMarker distribution:")
+print(marker_summary)

@@ -22,50 +22,78 @@
 # ------------------------------------------------------------
 
 rb_screen_contaminants <- function(sequences, blast_db, perc_identity = 95,
-                                    evalue = 1e-20, min_pident = 95,
-                                    min_length = 100, parallel_workers = 1,
-                                    blastn = "blastn") {
+                                   evalue = 1e-20, min_pident = 95,
+                                   min_length = 100, threads = 1,
+                                   blastn = "blastn") {
   if (!nzchar(Sys.which(blastn))) {
     stop("blastn executable not found: ", blastn,
          ". Install BLAST+ or point `blastn` at the correct path.", call. = FALSE)
   }
-
-  run_one <- function(seq) {
-    temp_fasta <- tempfile(pattern = "blast_query_", fileext = ".fasta")
-    temp_out <- tempfile(pattern = "blast_out_", fileext = ".txt")
-    on.exit({
-      existing <- c(temp_fasta, temp_out)[file.exists(c(temp_fasta, temp_out))]
-      if (length(existing) > 0) file.remove(existing)
-    }, add = TRUE)
-
-    seqinr::write.fasta(sequences = list(seq), names = "query", file.out = temp_fasta)
-
-    blast_cmd <- sprintf(
-      "%s -query %s -db %s -perc_identity %s -evalue %s -outfmt '6 pident evalue length' -max_target_seqs 1 -out %s",
-      blastn, shQuote(temp_fasta), shQuote(blast_db), perc_identity, evalue, shQuote(temp_out)
-    )
-    system(blast_cmd, ignore.stdout = TRUE, ignore.stderr = TRUE)
-
-    if (!file.exists(temp_out) || file.info(temp_out)$size == 0) return(FALSE)
-
+  
+  # Create a single temporary FASTA for all queries
+  temp_fasta <- tempfile(pattern = "blast_queries_", fileext = ".fasta")
+  temp_out <- tempfile(pattern = "blast_out_", fileext = ".txt")
+  on.exit({
+    existing <- c(temp_fasta, temp_out)[file.exists(c(temp_fasta, temp_out))]
+    if (length(existing) > 0) file.remove(existing)
+  }, add = TRUE)
+  
+  # Write all sequences to one FASTA file
+  headers <- paste0(">query_", seq_along(sequences))
+  lines <- character(length(sequences) * 2)
+  lines[c(TRUE, FALSE)] <- headers
+  lines[c(FALSE, TRUE)] <- sequences
+  writeLines(lines, temp_fasta)
+  
+  # Run BLAST using system2() with explicit shQuote() for Windows compatibility
+  blast_args <- c(
+    "-query", shQuote(temp_fasta),
+    "-db", shQuote(blast_db),
+    "-perc_identity", as.character(perc_identity),
+    "-evalue", as.character(evalue),
+    "-outfmt", shQuote("6 qseqid pident evalue length"),
+    "-max_target_seqs", "5",
+    "-num_threads", as.character(as.integer(threads)),
+    "-out", shQuote(temp_out)
+  )
+  
+  # Capture stderr to see if BLAST complains
+  blast_stderr <- system2(blastn, blast_args, stdout = FALSE, stderr = TRUE)
+  
+  # Initialize result vector
+  is_contaminant <- rep(FALSE, length(sequences))
+  
+  # Parse the output file
+  if (file.exists(temp_out) && file.info(temp_out)$size > 0) {
     hits <- tryCatch({
       read.delim(temp_out, header = FALSE,
-                 col.names = c("pident", "evalue", "length"),
-                 colClasses = c("numeric", "numeric", "integer"),
+                 col.names = c("qseqid", "pident", "evalue", "length"),
+                 colClasses = c("character", "numeric", "numeric", "integer"),
                  check.names = FALSE)
     }, error = function(e) data.frame())
-
-    nrow(hits) > 0 && any(hits$pident > min_pident & hits$length > min_length)
-  }
-
-  if (parallel_workers > 1) {
-    future::plan(future::multisession, workers = parallel_workers)
-    on.exit(future::plan(future::sequential), add = TRUE)
+    
+    if (nrow(hits) > 0) {
+      # Filter by user thresholds
+      valid_hits <- hits[hits$pident >= min_pident & hits$length >= min_length, , drop = FALSE]
+      
+      # Extract the integer index from "query_1", "query_2", etc.
+      indices <- as.integer(sub("^query_", "", valid_hits$qseqid))
+      indices <- indices[!is.na(indices)]
+      
+      # Flag as contaminant
+      is_contaminant[unique(indices)] <- TRUE
+    }
   } else {
-    future::plan(future::sequential)
+    # If file is empty, BLAST found no hits.
+    # Only warn if BLAST produced an unexpected error in stderr 
+    # (ignore the standard "0 hits found" message).
+    if (length(blast_stderr) > 0 && !any(grepl("0 hits found", blast_stderr))) {
+      warning("BLAST returned no hits and produced stderr:\n", 
+              paste(blast_stderr, collapse = "\n"), call. = FALSE)
+    }
   }
-
-  furrr::future_map_lgl(sequences, run_one)
+  
+  is_contaminant
 }
 
 
@@ -109,17 +137,25 @@ rb_screen_numts <- function(sequences, numt_fasta, min_match_length = 50) {
 # ------------------------------------------------------------
 
 rb_check_codons <- function(sequence, gene, coding_genes = c("COI", "complete_genome"),
-                             genetic_code = "VertebrateMitochondrial") {
+                            genetic_code = "2") {
   if (!gene %in% coding_genes) {
     return(list(has_stop = NA, frameshifted = NA, best_frame = NA))
   }
+  
+  # Early return for empty or degenerate sequences
+  seq_clean <- gsub("[^ACGT]", "N", toupper(sequence))
+  if (nchar(seq_clean) == 0 || !any(grepl("[ACGT]", seq_clean))) {
+    return(list(has_stop = NA, frameshifted = NA, best_frame = NA))
+  }
+  
   tryCatch({
-    seq_clean <- gsub("[^ACGT]", "N", toupper(sequence))
+    gc_table <- Biostrings::getGeneticCode(genetic_code)
+    
     frame_translations <- lapply(0:2, function(frame) {
       subseq <- substr(seq_clean, frame + 1, nchar(seq_clean))
       subseq <- substr(subseq, 1, nchar(subseq) - (nchar(subseq) %% 3))
       if (nchar(subseq) == 0) return(NA)
-      Biostrings::translate(Biostrings::DNAString(subseq), genetic.code = genetic_code)
+      Biostrings::translate(Biostrings::DNAString(subseq), genetic.code = gc_table)
     })
     stop_counts <- sapply(frame_translations, function(aa) {
       if (identical(aa, NA)) return(Inf)
@@ -189,12 +225,6 @@ rb_check_divergence <- function(data, species_col = "species", gene_col = "gene"
                                  mafft = "mafft", fasttree = "FastTree") {
   rb_required_columns(data, c(species_col, gene_col, sequence_col, id_col))
 
-  missing_tools <- c(mafft, fasttree)[!nzchar(Sys.which(c(mafft, fasttree)))]
-  if (length(missing_tools) > 0) {
-    stop("Required external tool(s) not found: ", paste(missing_tools, collapse = ", "),
-         call. = FALSE)
-  }
-
   check_one_group <- function(group_data) {
     n_seqs <- nrow(group_data)
     if (n_seqs < min_seqs) {
@@ -203,6 +233,11 @@ rb_check_divergence <- function(data, species_col = "species", gene_col = "gene"
     seq_lengths <- nchar(group_data[[sequence_col]])
     if (max(seq_lengths) / min(seq_lengths) > 100) {
       return(data.frame(id = group_data[[id_col]], div_result = "high_length_variation"))
+    }
+    missing_tools <- c(mafft, fasttree)[!nzchar(Sys.which(c(mafft, fasttree)))]
+    if (length(missing_tools) > 0) {
+      stop("Required external tool(s) not found: ", paste(missing_tools, collapse = ", "),
+           call. = FALSE)
     }
 
     tryCatch({
@@ -405,3 +440,24 @@ rb_run_qc_pipeline <- function(data, blast_db, numt_fasta = NULL,
   rb_compile_qc_flags(data, extra_flag_fn = extra_fn)
 }
 
+# Helper: extra_flag_fn that replicates the original edna_ref_qc.R logic
+default_extra_flags <- function(data) {
+  vapply(seq_len(nrow(data)), function(i) {
+    flags <- c()
+    
+    if (!is.na(data$genome_flag[i]) && data$genome_flag[i] == "missing_genes") {
+      flags <- c(flags, "incomplete_genome")
+    }
+    if (!is.na(data$div_result[i]) && data$div_result[i] == "divergent") {
+      flags <- c(flags, "divergent")
+    }
+    if (!is.na(data$div_result[i]) && data$div_result[i] %in% c("tree_error", "high_length_variation", "processing_error")) {
+      flags <- c(flags, paste0("tree_", data$div_result[i]))
+    }
+    if (data$gene[i] == "other") {
+      flags <- c(flags, "manual_review_needed")
+    }
+    
+    paste(flags, collapse = "|")
+  }, character(1))
+}

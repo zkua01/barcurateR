@@ -26,6 +26,60 @@ rb_default_marker_patterns <- function() {
   )
 }
 
+# ------------------------------------------------------------
+# rb_simplify_seq_type()
+#
+# Converts the detailed output of rb_extract_markers() into a
+# clean seq_type label suitable for downstream QC checks.
+#
+# Examples:
+#   "COI_partial"        -> "COI"
+#   "12S_unknown"        -> "12S"
+#   "genome_complete"    -> "genome_complete"
+#   "COI_partial;16S_partial" -> "multi_marker"
+#   "other_unknown"      -> "other_unknown"
+# ------------------------------------------------------------
+
+rb_simplify_seq_type <- function(marker_label) {
+  vapply(marker_label, function(label) {
+    
+    # Handle empty / NA
+    if (is.na(label) || !nzchar(label)) {
+      return("other_unknown")
+    }
+    
+    # Handle multi-gene records (contain semicolons)
+    if (grepl(";", label)) {
+      return("multi_marker")
+    }
+    
+    # Standardize genome_complete
+    if (grepl("genome_complete|genome", label, ignore.case = TRUE)) {
+      return("genome_complete")
+    }
+    
+    # Strip completeness suffix (_partial, _complete, _unknown)
+    marker_base <- sub("_(partial|complete|unknown)$", "", label)
+    
+    # Handle other_* patterns
+    if (grepl("^other", marker_base, ignore.case = TRUE)) {
+      return("other_unknown")
+    }
+    
+    # Uppercase for matching
+    marker_upper <- toupper(marker_base)
+    
+    # Check against known markers
+    known_markers <- c("COI", "12S", "16S", "18S", "CYTB")
+    
+    if (marker_upper %in% known_markers) {
+      return(marker_upper)
+    }
+    
+    "other_unknown"
+  }, character(1), USE.NAMES = FALSE)
+}
+
 #' rb_extract_markers
 #' Extract marker type + completeness from a sequence description
 #' @param description Free-text sequence description (e.g. a GenBank
@@ -127,19 +181,25 @@ rb_extract_markers <- function(description,
 # ------------------------------------------------------------
 
 rb_parse_source_table <- function(raw, source_name, column_map,
-                                   marker_fn = rb_extract_markers,
-                                   description_col = NULL) {
+                                  marker_fn = rb_extract_markers,
+                                  description_col = NULL,
+                                  min_length = 1) {
   parsed <- rb_standardize_columns(raw, column_map)
   parsed$source <- source_name
   parsed$sequence <- rb_clean_sequence(parsed$sequence)
   parsed$length <- nchar(parsed$sequence)
-
+  
   if (!is.null(description_col) && description_col %in% names(raw)) {
     parsed$seq_type <- vapply(raw[[description_col]], marker_fn, character(1))
+    parsed$seq_type <- rb_simplify_seq_type(parsed$seq_type)
   } else if (!"seq_type" %in% names(parsed)) {
     parsed$seq_type <- "other_unknown"
   }
-
+  
+  # Remove empty or zero-length sequences
+  parsed <- parsed[parsed$length >= min_length, , drop = FALSE]
+  row.names(parsed) <- NULL
+  
   parsed
 }
 
@@ -299,6 +359,3 @@ rb_resolve_ambiguous <- function(data, species_col = "species", sequence_col = "
     dplyr::bind_rows(combine_rows) %>%
     dplyr::distinct(.data[[species_col]], .data[[sequence_col]], .keep_all = TRUE)
 }
-
-
-

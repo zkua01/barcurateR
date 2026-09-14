@@ -405,7 +405,7 @@ test_that("rb_parse_source_table standardizes a simple NCBI-like table", {
   # seq_type should be inferred from the description column.
   expect_equal(
     parsed$seq_type,
-    c("12S_partial", "genome_complete", "CYTB_partial")
+    c("12S", "genome_complete", "CYTB")
   )
 })
 
@@ -879,4 +879,34 @@ test_that("rb_resolve_ambiguous reports the number of dropped blank/drop actions
   # Only A should remain.
   expect_equal(nrow(out), 1)
   expect_true("A" %in% out$species)
+})
+
+test_that("rb_parse_source_table removes empty sequences", {
+  
+  raw <- data.frame(
+    accession = c("X1", "X2", "X3"),
+    scientific_name = c("SpeciesA", "SpeciesB", "SpeciesC"),
+    sequence = c("ACGTACGT", "", "   "),
+    definition = c(
+      "COI gene, partial sequence",
+      "COI gene, partial sequence",
+      "COI gene, partial sequence"
+    ),
+    stringsAsFactors = FALSE
+  )
+  
+  parsed <- rb_parse_source_table(
+    raw,
+    source_name = "test",
+    column_map = c(
+      sequence_id = "accession",
+      species = "scientific_name",
+      sequence = "sequence"
+    ),
+    description_col = "definition"
+  )
+  
+  # Only the first row should survive
+  expect_equal(nrow(parsed), 1)
+  expect_equal(parsed$sequence_id, "X1")
 })
