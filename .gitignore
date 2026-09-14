@@ -7,10 +7,8 @@
 *.zip
 *.log
 *.tmp
-*.sqlite
 *.db
 r-lib/
-inst/extdata/*.sqlite
 inst/extdata/*.db
 regionbarcoder.Rcheck/
 docs/
