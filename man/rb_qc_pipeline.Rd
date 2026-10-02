@@ -24,10 +24,8 @@ rb_run_qc_pipeline(
   id_col = "unique_code",
   min_divergence_seqs = 5,
   parallel_workers = 1,
-  coding_genes = c("COI", "complete_genome"),
-  rrna_genes = c("12S", "16S"),
-  required_genome_genes = c("COI", "12S"),
-  genome_gene = "complete_genome"
+  coding_genes = c("COI"),
+  rrna_genes = c("12S", "16S")
 )
 }
 \arguments{
@@ -48,10 +46,6 @@ rb_run_qc_pipeline(
 \item{parallel_workers}{Number of parallel workers.}
 
 \item{coding_genes, rrna_genes}{Gene types for checks.}
-
-\item{required_genome_genes}{Required genes for genome completeness.}
-
-\item{genome_gene}{Label for complete genome records.}
 }
 \value{
 The input data frame with a \code{qc_flag} column added.

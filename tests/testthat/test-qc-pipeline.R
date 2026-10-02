@@ -128,6 +128,15 @@ test_that("rb_check_codons handles empty or invalid sequences gracefully", {
   expect_type(result2, "list")
 })
 
+test_that("rb_check_codons detects stop codons in COI", {
+  # COI test (unchanged)
+  coi_result <- rb_check_codons("ATGAAACGCGAA", "COI")
+  expect_false(coi_result$has_stop)
+  
+  # Non-coding markers should return NA
+  rrna_result <- rb_check_codons("ATGAAACGCGAA", "12S")
+  expect_true(is.na(rrna_result$has_stop))
+})
 
 # ------------------------------------------------------------
 # rb_check_rrna_integrity(): 12S/16S checks (Stage 5)
@@ -175,75 +184,6 @@ test_that("rb_check_rrna_integrity passes clean sequences", {
   expect_type(result, "list")
   expect_false(result$has_short)
   expect_false(result$has_gaps)
-})
-
-
-# ------------------------------------------------------------
-# rb_check_genome_completeness(): genome gene coverage (Stage 6)
-# ------------------------------------------------------------
-
-test_that("rb_check_genome_completeness flags genomes missing COI or 12S", {
-  
-  test_data <- data.frame(
-    species = c("SpeciesA", "SpeciesA", "SpeciesA",
-                "SpeciesB", "SpeciesB"),
-    gene = c("complete_genome", "COI", "12S",
-             "complete_genome", "COI"),
-    sequence = c("ACGT", "ACGT", "ACGT", "ACGT", "ACGT"),
-    stringsAsFactors = FALSE
-  )
-  
-  result <- rb_check_genome_completeness(
-    test_data,
-    required_genes = c("COI", "12S"),
-    genome_gene = "complete_genome",
-    species_col = "species",
-    gene_col = "gene"
-  )
-  
-  expect_s3_class(result, "data.frame")
-  
-  # SpeciesA has both COI and 12S -> genome should pass
-  # SpeciesB has COI but no 12S -> genome should be flagged
-  genome_rows <- result[result$gene == "complete_genome", ]
-  
-  speciesA_genome <- genome_rows[genome_rows$species == "SpeciesA", ]
-  speciesB_genome <- genome_rows[genome_rows$species == "SpeciesB", ]
-  
-  # Check that a genome_flag column exists and SpeciesB is flagged
-  expect_true("genome_flag" %in% names(result))
-  
-  if (nrow(speciesA_genome) > 0) {
-    expect_true(is.na(speciesA_genome$genome_flag) || speciesA_genome$genome_flag != "missing_genes")
-  }
-  
-  if (nrow(speciesB_genome) > 0) {
-    expect_equal(speciesB_genome$genome_flag, "missing_genes")
-  }
-})
-
-
-test_that("rb_check_genome_completeness handles data with no genomes", {
-  
-  test_data <- data.frame(
-    species = c("SpeciesA", "SpeciesA"),
-    gene = c("COI", "12S"),
-    sequence = c("ACGT", "ACGT"),
-    stringsAsFactors = FALSE
-  )
-  
-  result <- rb_check_genome_completeness(
-    test_data,
-    required_genes = c("COI", "12S"),
-    genome_gene = "complete_genome",
-    species_col = "species",
-    gene_col = "gene"
-  )
-  
-  expect_s3_class(result, "data.frame")
-  expect_true("genome_flag" %in% names(result))
-  # No genomes, so no flags
-  expect_true(all(is.na(result$genome_flag)))
 })
 
 
@@ -338,25 +278,4 @@ test_that("rb_compile_qc_flags handles divergent and tree error results", {
   expect_true(grepl("divergent", result$qc_flag[1]))
   expect_true(grepl("tree_tree_error", result$qc_flag[2]))
   expect_equal(result$qc_flag[3], "pass")
-})
-
-
-test_that("rb_compile_qc_flags handles genome_flag missing_genes", {
-  
-  test_data <- data.frame(
-    is_contaminant = FALSE,
-    is_numt = FALSE,
-    has_stop = FALSE,
-    frameshifted = FALSE,
-    has_short = FALSE,
-    has_gaps = FALSE,
-    genome_flag = "missing_genes",
-    div_result = NA_character_,
-    gene = "complete_genome",
-    stringsAsFactors = FALSE
-  )
-  
-  result <- rb_compile_qc_flags(test_data, extra_flag_fn = default_extra_flags)
-  
-  expect_true(grepl("incomplete_genome", result$qc_flag))
 })

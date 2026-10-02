@@ -16,6 +16,7 @@
 #' @param con A DBI connection to a barcurateR SQLite database.
 #' @param db_path Path to the SQLite database (used if `con` is NULL).
 #' @param marker The marker gene to extract from the database (e.g., `"12S"`, `"COI"`).
+#' @param qc_flag Character vector of QC flags to include from the reference database (e.g., `"pass"`, `"manual_review_needed"`). Passed to `rb_get_sequences()`. Defaults to `"pass"`.
 #' @param method Assignment method: `"blastn"` (uses BLAST+) or `"exact"` (dependency-free exact matching mode).
 #' @param min_identity Minimum percent identity for a confident assignment.
 #' @param min_coverage Minimum combined coverage (`ccovs`) for high-confidence assignment. Applied as a proportion (e.g., `0.9` for 90%). Combined coverage is calculated as the geometric mean of query and subject coverage.
@@ -222,7 +223,7 @@ rb_assign_blastn <- function(asv_fasta, refs, out_dir, min_identity, min_coverag
 
 #' @rdname rb_assignment
 #' @export
-rb_assign_edna <- function(asv_fasta, con = NULL, db_path = NULL, marker = NULL,
+rb_assign_edna <- function(asv_fasta, con = NULL, db_path = NULL, marker = NULL, qc_flag = "pass",
                            method = c("blastn", "exact"), min_identity = 99,
                            min_coverage = 0.9, max_target_seqs = 100,
                            out_dir = tempfile("barcurateR_assign_"),
@@ -236,7 +237,7 @@ rb_assign_edna <- function(asv_fasta, con = NULL, db_path = NULL, marker = NULL,
   }
   on.exit(if (own_connection) rb_disconnect(con), add = TRUE)
   asvs <- rb_read_fasta(asv_fasta)
-  refs <- rb_get_sequences(con, marker = marker, table_name = table_name)
+  refs <- rb_get_sequences(con, marker = marker, table_name = table_name, qc_flag = qc_flag)
   refs$sequence <- rb_clean_sequence(refs$sequence)
   if (method == "exact") {
     hits <- rb_exact_hits(asvs, refs)

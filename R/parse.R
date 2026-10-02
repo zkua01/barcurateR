@@ -98,41 +98,53 @@ rb_default_marker_patterns <- function() {
 #' @noRd
 rb_simplify_seq_type <- function(marker_label) {
   vapply(marker_label, function(label) {
-    
-    # Handle empty / NA
     if (is.na(label) || !nzchar(label)) {
       return("other_unknown")
     }
-    
-    # Handle multi-gene records (contain semicolons)
     if (grepl(";", label)) {
       return("multi_marker")
     }
-    
-    # Standardize genome_complete
-    if (grepl("genome_complete|genome", label, ignore.case = TRUE)) {
-      return("genome_complete")
+    # Genome records: simplify to "genome"
+    # Completeness is captured separately in seq_status
+    if (grepl("genome", label, ignore.case = TRUE)) {
+      return("genome")
     }
-    
-    # Strip completeness suffix (_partial, _complete, _unknown)
     marker_base <- sub("_(partial|complete|unknown)$", "", label)
-    
-    # Handle other_* patterns
     if (grepl("^other", marker_base, ignore.case = TRUE)) {
       return("other_unknown")
     }
-    
-    # Uppercase for matching
     marker_upper <- toupper(marker_base)
-    
-    # Check against known markers
     known_markers <- c("COI", "12S", "16S", "18S", "CYTB")
-    
     if (marker_upper %in% known_markers) {
       return(marker_upper)
     }
-    
     "other_unknown"
+  }, character(1), USE.NAMES = FALSE)
+}
+
+#' Extract completeness status from a detailed marker label
+#'
+#' Internal helper that splits the completeness suffix from labels
+#' produced by [rb_extract_markers()]. Used by [rb_parse_source_table()]
+#' to populate the `seq_status` column.
+#'
+#' @keywords internal
+#' @noRd
+rb_extract_completeness <- function(marker_label) {
+  vapply(marker_label, function(label) {
+    if (is.na(label) || !nzchar(label)) {
+      return("unknown")
+    }
+    if (grepl(";", label)) {
+      return("unknown")
+    }
+    if (grepl("_complete$", label)) {
+      return("complete")
+    }
+    if (grepl("_partial$", label)) {
+      return("partial")
+    }
+    "unknown"
   }, character(1), USE.NAMES = FALSE)
 }
 
@@ -156,6 +168,11 @@ rb_extract_markers <- function(description,
   if (stringr::str_detect(desc_lower, genome_pattern)) {
     return("genome_complete")
   }
+  
+  if (stringr::str_detect(desc_lower, "genome")) {
+    return("genome_unknown")
+  }
+  
 
   detect_completeness <- function(marker_pattern) {
     p <- paste0("(?:", marker_pattern, ")")
@@ -216,16 +233,22 @@ rb_parse_source_table <- function(raw, source_name, column_map,
   parsed$length <- nchar(parsed$sequence)
   
   if (!is.null(description_col) && description_col %in% names(raw)) {
-    parsed$seq_type <- vapply(raw[[description_col]], marker_fn, character(1))
-    parsed$seq_type <- rb_simplify_seq_type(parsed$seq_type)
+    detailed_labels <- vapply(raw[[description_col]], marker_fn, character(1))
+    parsed$seq_type <- rb_simplify_seq_type(detailed_labels)
+    parsed$seq_status <- rb_extract_completeness(detailed_labels)
   } else if (!"seq_type" %in% names(parsed)) {
     parsed$seq_type <- "other_unknown"
+    parsed$seq_status <- "unknown"
+  } else if (!"seq_status" %in% names(parsed)) {
+    parsed$seq_status <- "unknown"
   }
   
-  # Remove empty or zero-length sequences
-  parsed <- parsed[parsed$length >= min_length, , drop = FALSE]
+  parsed <- parsed[
+    !is.na(parsed$length) & parsed$length >= min_length,
+    ,
+    drop = FALSE
+  ]
   row.names(parsed) <- NULL
-  
   parsed
 }
 

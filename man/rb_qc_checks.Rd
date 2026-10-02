@@ -4,30 +4,16 @@
 \alias{rb_qc_checks}
 \alias{rb_check_codons}
 \alias{rb_check_rrna_integrity}
-\alias{rb_check_genome_completeness}
 \alias{rb_check_divergence}
 \title{Sequence integrity checks for quality control}
 \usage{
-rb_check_codons(
-  sequence,
-  gene,
-  coding_genes = c("COI", "complete_genome"),
-  genetic_code = "2"
-)
+rb_check_codons(sequence, gene, coding_genes = c("COI"), genetic_code = "2")
 
 rb_check_rrna_integrity(
   sequence,
   gene,
   rrna_genes = c("12S", "16S"),
   min_length = 100
-)
-
-rb_check_genome_completeness(
-  data,
-  required_genes = c("COI", "12S"),
-  genome_gene = "complete_genome",
-  species_col = "species",
-  gene_col = "gene"
 )
 
 rb_check_divergence(
@@ -46,9 +32,10 @@ rb_check_divergence(
 \arguments{
 \item{sequence}{A single DNA sequence string.}
 
-\item{gene}{The gene/marker type (e.g., \code{"COI"}, \code{"12S"}).}
+\item{gene}{The gene/marker type (e.g., \code{"COI"}, \code{"12S"}, \code{"genome"}).}
 
-\item{coding_genes}{Gene types to check for codon issues.}
+\item{coding_genes}{Gene types to check for codon issues.
+Default \code{c("COI")}.}
 
 \item{genetic_code}{Genetic code table (default \code{"2"} for vertebrate mtDNA).}
 
@@ -57,10 +44,6 @@ rb_check_divergence(
 \item{min_length}{Minimum expected length for rRNA sequences.}
 
 \item{data}{A data frame containing sequences and metadata.}
-
-\item{required_genes}{Genes required for a complete genome.}
-
-\item{genome_gene}{Label for complete genome records.}
 
 \item{species_col, gene_col, sequence_col, id_col}{Column names.}
 
@@ -76,7 +59,6 @@ rb_check_divergence(
 \itemize{
 \item \code{rb_check_codons()} returns a list with \code{has_stop}, \code{frameshifted}, \code{best_frame}.
 \item \code{rb_check_rrna_integrity()} returns a list with \code{has_short}, \code{has_gaps}.
-\item \code{rb_check_genome_completeness()} returns \code{data} with a \code{genome_flag} column.
 \item \code{rb_check_divergence()} returns \code{data} with a \code{div_result} column.
 }
 }
@@ -84,10 +66,12 @@ rb_check_divergence(
 Functions to check individual sequences or groups of sequences for
 common quality issues.
 \itemize{
-\item \code{rb_check_codons()}: Checks coding sequences for stop codons/frameshifts.
-\item \code{rb_check_rrna_integrity()}: Checks rRNA sequences for length and gaps.
-\item \code{rb_check_genome_completeness()}: Flags complete genomes missing markers.
-\item \code{rb_check_divergence()}: Detects phylogenetically divergent sequences.
+\item \code{rb_check_codons()}: Checks coding sequences (COI) for
+stop codons and frameshifts.
+\item \code{rb_check_rrna_integrity()}: Checks rRNA sequences (12S, 16S) for
+abnormal length and non-ACGT characters.
+\item \code{rb_check_divergence()}: Detects phylogenetically divergent sequences
+within species/gene groups using MAFFT alignment and FastTree.
 }
 }
 \seealso{

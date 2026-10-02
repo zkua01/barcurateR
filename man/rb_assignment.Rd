@@ -40,6 +40,7 @@ rb_assign_edna(
   con = NULL,
   db_path = NULL,
   marker = NULL,
+  qc_flag = "pass",
   method = c("blastn", "exact"),
   min_identity = 99,
   min_coverage = 0.9,
@@ -87,6 +88,8 @@ rb_build_species_matrix(
 \item{db_path}{Path to the SQLite database (used if \code{con} is NULL).}
 
 \item{marker}{The marker gene to extract from the database (e.g., \code{"12S"}, \code{"COI"}).}
+
+\item{qc_flag}{Character vector of QC flags to include from the reference database (e.g., \code{"pass"}, \code{"manual_review_needed"}). Passed to \code{rb_get_sequences()}. Defaults to \code{"pass"}.}
 
 \item{method}{Assignment method: \code{"blastn"} (uses BLAST+) or \code{"exact"} (dependency-free exact matching mode).}
 

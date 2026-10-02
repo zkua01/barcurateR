@@ -153,8 +153,34 @@ rb_curate_reference <- function(data,
     fasttree = fasttree
   )
   
+  n_pre_ml <- nrow(qc1_data)
+  keep_mask <- rep(TRUE, nrow(qc1_data))
+  # Remove all contaminants
+  if ("is_contaminant" %in% names(qc1_data)) {
+    keep_mask <- keep_mask & !qc1_data$is_contaminant
+  }
+  # Remove all numts
+  if ("is_numts" %in% names(qc1_data)) {
+    keep_mask <- keep_mask & !qc1_data$is_numts
+  }
+  # Remove divergent sequences with known markers
+  # divergent "other" sequences are kept for ML classification
+  if ("div_result" %in% names(qc1_data)) {
+    is_divergent <- !is.na(qc1_data$div_result) & qc1_data$div_result == "divergent"
+    is_unknown <- qc1_data$seq_type %in% c("other", "other_unknown")
+    keep_mask <- keep_mask & !(is_divergent & !is_unknown)
+  }
+  
+  qc1_filtered <- qc1_data[keep_mask,, drop = FALSE]
+  n_removed_ml <- n_pre_ml - nrow(qc1_filtered)
+  
+  message(sprintf(
+    "  -> Pre-ML filter: %d passed, %d removed (%d total).",
+    nrow(qc1_filtered), n_removed_ml, n_pre_ml
+  ))
+  
   classifier_model <- NULL
-  qc2_data <- qc1_data
+  qc2_data <- qc1_filtered
   
   # ----------------------------------------------------------
   # STAGE 2: ML Classification (Optional)
@@ -346,7 +372,8 @@ rb_run_qc_checks <- function(data,
                              run_divergence = FALSE,
                              mafft = "mafft",
                              fasttree = "FastTree",
-                             min_divergence_seqs = 5) {
+                             min_divergence_seqs = 5,
+                             contaminant_threads = 1) {
   
   if (!"unique_code" %in% names(data)) {
     seq_clean <- rb_clean_sequence(data$sequence)
@@ -355,10 +382,26 @@ rb_run_qc_checks <- function(data,
     data$unique_code <- codes[match(seq_clean, unique_seqs)]
   }
   
+  # Ensure seq_status exists
+  if (!"seq_status" %in% names(data)) {
+    data$seq_status <- "unknown"
+  }
+  
+  stale_cols <- intersect(names(data), c("div_result", "qc_flag",
+                                         "is_contaminant", "is_numt",
+                                         "has_stop", "frameshifted",
+                                         "has_short", "has_gaps", "genome_flag"))
+  
+  if (length(stale_cols) > 0) {
+    data <- data[, setdiff(names(data), stale_cols), drop = FALSE]
+  }
+  
   # 1. Contaminants
   if (!is.null(blast_db) && file.exists(paste0(blast_db, ".nsq"))) {
     message("  -> Screening contaminants...")
-    data$is_contaminant <- rb_screen_contaminants(data$sequence, blast_db)
+    data$is_contaminant <- rb_screen_contaminants(
+      data$sequence, blast_db, threads = contaminant_threads
+    )
   } else {
     data$is_contaminant <- FALSE
   }
@@ -371,15 +414,19 @@ rb_run_qc_checks <- function(data,
     data$is_numt <- FALSE
   }
   
-  # 3. Codons
+  # 3. Codons (applies to COI)
   message("  -> Checking codons...")
   codon_res <- mapply(
     function(seq, gene) rb_check_codons(seq, gene),
     data$sequence, data$seq_type,
     SIMPLIFY = FALSE
   )
-  data$has_stop <- vapply(codon_res, function(x) ifelse(is.na(x$has_stop), FALSE, x$has_stop), logical(1))
-  data$frameshifted <- vapply(codon_res, function(x) ifelse(is.na(x$frameshifted), FALSE, x$frameshifted), logical(1))
+  data$has_stop <- vapply(codon_res, function(x) {
+    ifelse(is.na(x$has_stop), FALSE, x$has_stop)
+  }, logical(1))
+  data$frameshifted <- vapply(codon_res, function(x) {
+    ifelse(is.na(x$frameshifted), FALSE, x$frameshifted)
+  }, logical(1))
   
   # 4. rRNA integrity
   message("  -> Checking rRNA integrity...")
@@ -388,18 +435,14 @@ rb_run_qc_checks <- function(data,
     data$sequence, data$seq_type,
     SIMPLIFY = FALSE
   )
-  data$has_short <- vapply(rrna_res, function(x) ifelse(is.na(x$has_short), FALSE, x$has_short), logical(1))
-  data$has_gaps <- vapply(rrna_res, function(x) ifelse(is.na(x$has_gaps), FALSE, x$has_gaps), logical(1))
+  data$has_short <- vapply(rrna_res, function(x) {
+    ifelse(is.na(x$has_short), FALSE, x$has_short)
+  }, logical(1))
+  data$has_gaps <- vapply(rrna_res, function(x) {
+    ifelse(is.na(x$has_gaps), FALSE, x$has_gaps)
+  }, logical(1))
   
-  # 5. Genome completeness
-  message("  -> Checking genome completeness...")
-  data <- rb_check_genome_completeness(
-    data,
-    species_col = "species",
-    gene_col = "seq_type"
-  )
-  
-  # 6. Divergence
+  # 5. Divergence
   if (isTRUE(run_divergence)) {
     message("  -> Checking divergence (requires mafft/FastTree)...")
     div_res <- tryCatch(
@@ -418,27 +461,36 @@ rb_run_qc_checks <- function(data,
         data.frame(unique_code = data$unique_code, div_result = "processing_error", stringsAsFactors = FALSE)
       }
     )
-    data <- merge(data, div_res, by = "unique_code", all.x = TRUE)
+    if ("div_result" %in% names(div_res) && all(c("species", "sequence", "seq_type") %in% names(div_res))) {
+      data <- div_res
+    } else {
+      data <- merge(data, div_res, by = "unique_code", all.x = TRUE)
+    }
   } else {
     data$div_result <- NA_character_
   }
   
-  # 7. Compile flags
+  # 6. Compile flags (genome_flag references removed)
   message("  -> Compiling QC flags...")
+  message("Columns at flag compilation: ", paste(names(data), collapse = ", "))
   extra_flags <- function(d) {
     vapply(seq_len(nrow(d)), function(i) {
       flags <- c()
-      if (!is.na(d$genome_flag[i]) && d$genome_flag[i] == "missing_genes") flags <- c(flags, "incomplete_genome")
-      if (!is.na(d$div_result[i]) && d$div_result[i] == "divergent") flags <- c(flags, "divergent")
-      if (!is.na(d$div_result[i]) && d$div_result[i] %in% c("tree_error", "high_length_variation", "processing_error")) {
+      if (!is.na(d$div_result[i]) && d$div_result[i] == "divergent") {
+        flags <- c(flags, "divergent")
+      }
+      if (!is.na(d$div_result[i]) && d$div_result[i] %in% c(
+        "tree_error", "high_length_variation", "processing_error"
+      )) {
         flags <- c(flags, paste0("tree_", d$div_result[i]))
       }
-      if (d$seq_type[i] %in% c("other", "other_unknown")) flags <- c(flags, "manual_review_needed")
+      if (d$seq_type[i] %in% c("other", "other_unknown")) {
+        flags <- c(flags, "manual_review_needed")
+      }
       paste(flags, collapse = "|")
     }, character(1))
   }
   
   data <- rb_compile_qc_flags(data, extra_flag_fn = extra_flags)
-  
   data
 }

@@ -1,0 +1,170 @@
+---
+title: "Curating an eDNA Reference Database for Slovenian Freshwater Fishes"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Curating a DNA Reference Database with barcurateR}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(tibble)
+library(dplyr)
+
+# slovenian fishes
+
+slovenian_fish <- tribble(
+  ~species, ~family, ~order, ~class,
+  # Petromyzontida
+  "Petromyzon marinus", "Petromyzontidae", "Petromyzontiformes", "Petromyzontida",
+  "Eudontomyzon vladykovi", "Petromyzontidae", "Petromyzontiformes", "Petromyzontida",
+  "Lampetra planeri", "Petromyzontidae", "Petromyzontiformes", "Petromyzontida",
+  
+  # Acipenseriformes
+  "Acipenser ruthenus", "Acipenseridae", "Acipenseriformes", "Actinopterygii",
+  "Acipenser baerii", "Acipenseridae", "Acipenseriformes", "Actinopterygii",
+  "Polyodon spathula", "Polyodontidae", "Acipenseriformes", "Actinopterygii",
+  
+  # Anguilliformes
+  "Anguilla anguilla", "Anguillidae", "Anguilliformes", "Actinopterygii",
+  
+  # Clupeiformes
+  "Alosa immaculata", "Clupeidae", "Clupeiformes", "Actinopterygii",
+  
+  # Cypriniformes: Cyprinidae
+  "Mylopharyngodon piceus", "Cyprinidae", "Cypriniformes", "Actinopterygii",
+  "Rutilus pigus", "Cyprinidae", "Cypriniformes", "Actinopterygii",
+  "Rutilus virgo", "Cyprinidae", "Cypriniformes", "Actinopterygii",
+  "Rutilus aula", "Cyprinidae", "Cypriniformes", "Actinopterygii",
+  "Leuciscus leuciscus", "Cyprinidae", "Cypriniformes", "Actinopterygii",
+  "Squalius cephalus", "Cyprinidae", "Cypriniformes", "Actinopterygii",
+  "Squalius squalus", "Cyprinidae", "Cypriniformes", "Actinopterygii",
+  "Squalius janae", "Cyprinidae", "Cypriniformes", "Actinopterygii",
+  "Leuciscus idus", "Cyprinidae", "Cypriniformes", "Actinopterygii",
+  "Alburnus alburnus", "Cyprinidae", "Cypriniformes", "Actinopterygii",
+  "Alburnus arborella", "Cyprinidae", "Cypriniformes", "Actinopterygii",
+  "Alburnus sarmaticus", "Cyprinidae", "Cypriniformes", "Actinopterygii",
+  "Phoxinus lumaireul", "Cyprinidae", "Cypriniformes", "Actinopterygii",
+  "Phoxinus phoxinus", "Cyprinidae", "Cypriniformes", "Actinopterygii",
+  "Ctenopharyngodon idella", "Cyprinidae", "Cypriniformes", "Actinopterygii",
+  "Scardinius erythrophthalmus", "Cyprinidae", "Cypriniformes", "Actinopterygii",
+  "Leuciscus aspius", "Cyprinidae", "Cypriniformes", "Actinopterygii",
+  "Tinca tinca", "Cyprinidae", "Cypriniformes", "Actinopterygii",
+  "Chondrostoma nasus", "Cyprinidae", "Cypriniformes", "Actinopterygii",
+  "Protochondrostoma genei", "Cyprinidae", "Cypriniformes", "Actinopterygii",
+  "Chondrostoma soetta", "Cyprinidae", "Cypriniformes", "Actinopterygii",
+  "Gobio obtusirostris", "Cyprinidae", "Cypriniformes", "Actinopterygii",
+  "Romanogobio vladykovi", "Cyprinidae", "Cypriniformes", "Actinopterygii",
+  "Romanogobio kesslerii", "Cyprinidae", "Cypriniformes", "Actinopterygii",
+  "Romanogobio uranoscopus", "Cyprinidae", "Cypriniformes", "Actinopterygii",
+  "Romanogobio benacensis", "Cyprinidae", "Cypriniformes", "Actinopterygii",
+  "Pseudorasbora parva", "Cyprinidae", "Cypriniformes", "Actinopterygii",
+  "Barbus barbus", "Cyprinidae", "Cypriniformes", "Actinopterygii",
+  "Barbus plebejus", "Cyprinidae", "Cypriniformes", "Actinopterygii",
+  "Barbus balcanicus", "Cyprinidae", "Cypriniformes", "Actinopterygii",
+  "Barbus caninus", "Cyprinidae", "Cypriniformes", "Actinopterygii",
+  "Rhodeus amarus", "Cyprinidae", "Cypriniformes", "Actinopterygii",
+  "Vimba vimba", "Cyprinidae", "Cypriniformes", "Actinopterygii",
+  "Abramis brama", "Cyprinidae", "Cypriniformes", "Actinopterygii",
+  "Ballerus sapa", "Cyprinidae", "Cypriniformes", "Actinopterygii",
+  "Ballerus ballerus", "Cyprinidae", "Cypriniformes", "Actinopterygii",
+  "Blicca bjoerkna", "Cyprinidae", "Cypriniformes", "Actinopterygii",
+  "Alburnoides bipunctatus", "Cyprinidae", "Cypriniformes", "Actinopterygii",
+  "Pelecus cultratus", "Cyprinidae", "Cypriniformes", "Actinopterygii",
+  "Carassius carassius", "Cyprinidae", "Cypriniformes", "Actinopterygii",
+  "Carassius auratus", "Cyprinidae", "Cypriniformes", "Actinopterygii",
+  "Carassius gibelio", "Cyprinidae", "Cypriniformes", "Actinopterygii",
+  "Cyprinus carpio", "Cyprinidae", "Cypriniformes", "Actinopterygii",
+  "Hypophthalmichthys molitrix", "Cyprinidae", "Cypriniformes", "Actinopterygii",
+  "Hypophthalmichthys nobilis", "Cyprinidae", "Cypriniformes", "Actinopterygii",
+  
+  # Cypriniformes: Cobitidae
+  "Cobitis elongatoides", "Cobitidae", "Cypriniformes", "Actinopterygii",
+  "Cobitis bilineata", "Cobitidae", "Cypriniformes", "Actinopterygii",
+  "Cobitis elongata", "Cobitidae", "Cypriniformes", "Actinopterygii",
+  "Sabanejewia balcanica", "Cobitidae", "Cypriniformes", "Actinopterygii",
+  "Misgurnus fossilis", "Cobitidae", "Cypriniformes", "Actinopterygii",
+  
+  # Cypriniformes: Nemacheilidae
+  "Barbatula barbatula", "Nemacheilidae", "Cypriniformes", "Actinopterygii",
+  
+  # Siluriformes
+  "Silurus glanis", "Siluridae", "Siluriformes", "Actinopterygii",
+  "Ameiurus nebulosus", "Ictaluridae", "Siluriformes", "Actinopterygii",
+  "Ameiurus melas", "Ictaluridae", "Siluriformes", "Actinopterygii",
+  "Clarias gariepinus", "Clariidae", "Siluriformes", "Actinopterygii",
+  
+  # Esociformes
+  "Esox lucius", "Esocidae", "Esociformes", "Actinopterygii",
+  "Umbra krameri", "Umbridae", "Esociformes", "Actinopterygii",
+  
+  # Salmoniformes
+  "Salmo trutta", "Salmonidae", "Salmoniformes", "Actinopterygii",
+  "Salmo marmoratus", "Salmonidae", "Salmoniformes", "Actinopterygii",
+  "Oncorhynchus mykiss", "Salmonidae", "Salmoniformes", "Actinopterygii",
+  "Oncorhynchus kisutch", "Salmonidae", "Salmoniformes", "Actinopterygii",
+  "Salvelinus fontinalis", "Salmonidae", "Salmoniformes", "Actinopterygii",
+  "Salvelinus umbla", "Salmonidae", "Salmoniformes", "Actinopterygii",
+  "Hucho hucho", "Salmonidae", "Salmoniformes", "Actinopterygii",
+  "Coregonus lavaretus", "Coregonidae", "Salmoniformes", "Actinopterygii",
+  "Coregonus sp.", "Coregonidae", "Salmoniformes", "Actinopterygii",
+  "Thymallus thymallus", "Thymallidae", "Salmoniformes", "Actinopterygii",
+  "Thymallus arcticus", "Thymallidae", "Salmoniformes", "Actinopterygii",
+  
+  # Gadiformes
+  "Lota lota", "Lotidae", "Gadiformes", "Actinopterygii",
+  
+  # Cyprinodontiformes
+  "Gambusia holbrooki", "Poeciliidae", "Cyprinodontiformes", "Actinopterygii",
+  "Aphanius fasciatus", "Cyprinodontidae", "Cyprinodontiformes", "Actinopterygii",
+  
+  # Gasterosteiformes
+  "Gasterosteus gymnurus", "Gasterosteidae", "Gasterosteiformes", "Actinopterygii",
+  "Gasterosteus aculeatus", "Gasterosteidae", "Gasterosteiformes", "Actinopterygii",
+  
+  # Scorpaeniformes
+  "Cottus gobio", "Cottidae", "Scorpaeniformes", "Actinopterygii",
+  "Cottus metae", "Cottidae", "Scorpaeniformes", "Actinopterygii",
+  
+  # Perciformes
+  "Padogobius bonelli", "Gobiidae", "Perciformes", "Actinopterygii",
+  "Knipowitschia panizzae", "Gobiidae", "Perciformes", "Actinopterygii",
+  "Ponticola kessleri", "Gobiidae", "Perciformes", "Actinopterygii",
+  "Neogobius fluviatilis", "Gobiidae", "Perciformes", "Actinopterygii",
+  "Neogobius melanostomus", "Gobiidae", "Perciformes", "Actinopterygii",
+  "Babka gymnotrachelus", "Gobiidae", "Perciformes", "Actinopterygii",
+  "Perca fluviatilis", "Percidae", "Perciformes", "Actinopterygii",
+  "Sander lucioperca", "Percidae", "Perciformes", "Actinopterygii",
+  "Gymnocephalus cernuus", "Percidae", "Perciformes", "Actinopterygii",
+  "Gymnocephalus baloni", "Percidae", "Perciformes", "Actinopterygii",
+  "Gymnocephalus schraetser", "Percidae", "Perciformes", "Actinopterygii",
+  "Zingel streber", "Percidae", "Perciformes", "Actinopterygii",
+  "Zingel zingel", "Percidae", "Perciformes", "Actinopterygii",
+  "Micropterus salmoides", "Centrarchidae", "Perciformes", "Actinopterygii",
+  "Lepomis gibbosus", "Centrarchidae", "Perciformes", "Actinopterygii",
+  "Oreochromis niloticus", "Cichlidae", "Perciformes", "Actinopterygii"
+) %>%
+  mutate(genus = sub(" .*", "", species)) %>%
+  select(species, genus, family, order, class)
+
+slovenian_fish
+```
+
+# Introduction
+
+# Loading the source data
+
+# Standardization & ambiguity resolution
+
+# Curation Pipeline
+
+# Database auditing
+
+# Downstream Application
+
+# Conclusion

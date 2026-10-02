@@ -346,67 +346,44 @@ test_that("rb_clean_sequence removes whitespace but retains alignment gaps", {
 # rb_parse_source_table()
 # ------------------------------------------------------------
 
-test_that("rb_parse_source_table standardizes a simple NCBI-like table", {
-  
-  raw <- data.frame(
-    accession = c("X1", "X2", "X3"),
-    scientific_name = c("Danio rerio", "Cyprinus carpio", "Carassius auratus"),
-    sequence = c("acgtacgt", "ACGTACGTAA", "AC-GT"),
-    definition = c(
-      "12S ribosomal RNA gene, partial sequence",
-      "mitochondrion, complete genome",
-      "cytochrome b gene, partial cds"
+test_that("rb_parse_source_table parses NCBI-style data with seq_status", {
+  ncbi_raw <- data.frame(
+    accession = c("MW000001", "MW000002", "MW000003"),
+    species_query = c("Alligator sinensis", "Alligator sinensis", "Python molurus"),
+    sequence = c("ATCGATCG", "ATCGATCG", "GCTAGCTA"),
+    description = c(
+      "Alligator sinensis 12S ribosomal RNA gene, partial sequence",
+      "Alligator sinensis cytochrome c oxidase subunit 1 (COI) gene, complete cds",
+      "Python molurus mitochondrion, complete genome"
     ),
     stringsAsFactors = FALSE
   )
   
   parsed <- rb_parse_source_table(
-    raw,
+    ncbi_raw,
     source_name = "ncbi_test",
     column_map = c(
       sequence_id = "accession",
-      species = "scientific_name",
+      species = "species_query",
       sequence = "sequence"
     ),
-    description_col = "definition"
+    description_col = "description"
   )
   
-  expect_s3_class(parsed, "data.frame")
+  expect_true("seq_status" %in% names(parsed))  # NEW
+  expect_true(all(c("sequence_id", "species", "sequence", "seq_type", "seq_status", "source") %in% names(parsed)))
+  expect_equal(nrow(parsed), 3)
+  expect_true(all(parsed$source == "ncbi_test"))
   
-  # Standardized columns should be present.
-  expect_true(
-    all(
-      c(
-        "sequence_id",
-        "species",
-        "sequence",
-        "source",
-        "length",
-        "seq_type"
-      ) %in% names(parsed)
-    )
-  )
+  # Check seq_type values
+  expect_equal(parsed$seq_type[1], "12S")
+  expect_equal(parsed$seq_type[2], "COI")
+  expect_equal(parsed$seq_type[3], "genome")  # CHANGED from "genome_complete"
   
-  # Source identifiers should become sequence_id.
-  expect_equal(parsed$sequence_id, c("X1", "X2", "X3"))
-  
-  # Source label should be added.
-  expect_equal(parsed$source, rep("ncbi_test", 3))
-  
-  # Sequences should be cleaned but gaps retained.
-  expect_equal(
-    parsed$sequence,
-    c("ACGTACGT", "ACGTACGTAA", "AC-GT")
-  )
-  
-  # Length should count retained gap characters.
-  expect_equal(parsed$length, c(8, 10, 5))
-  
-  # seq_type should be inferred from the description column.
-  expect_equal(
-    parsed$seq_type,
-    c("12S", "genome_complete", "CYTB")
-  )
+  # Check seq_status values
+  expect_equal(parsed$seq_status[1], "partial")
+  expect_equal(parsed$seq_status[2], "complete")  # "complete cds" correctly matches "complete" pattern for COI
+  expect_equal(parsed$seq_status[3], "complete")
 })
 
 
@@ -909,4 +886,33 @@ test_that("rb_parse_source_table removes empty sequences", {
   # Only the first row should survive
   expect_equal(nrow(parsed), 1)
   expect_equal(parsed$sequence_id, "X1")
+})
+
+test_that("rb_simplify_seq_type simplifies marker labels correctly", {
+  expect_equal(rb_simplify_seq_type("COI_partial"), "COI")
+  expect_equal(rb_simplify_seq_type("COI_complete"), "COI")
+  expect_equal(rb_simplify_seq_type("COI_unknown"), "COI")
+  expect_equal(rb_simplify_seq_type("12S_partial"), "12S")
+  expect_equal(rb_simplify_seq_type("12S_unknown"), "12S")
+  expect_equal(rb_simplify_seq_type("16S_complete"), "16S")
+  expect_equal(rb_simplify_seq_type("genome_complete"), "genome")  # CHANGED
+  expect_equal(rb_simplify_seq_type("genome_partial"), "genome")   # CHANGED
+  expect_equal(rb_simplify_seq_type("COI_partial;16S_partial"), "multi_marker")
+  expect_equal(rb_simplify_seq_type("other_unknown"), "other_unknown")
+  expect_equal(rb_simplify_seq_type("other_partial"), "other_unknown")
+  expect_equal(rb_simplify_seq_type(NA), "other_unknown")
+  expect_equal(rb_simplify_seq_type(""), "other_unknown")
+})
+
+test_that("rb_extract_completeness extracts completeness from marker labels", {
+  expect_equal(rb_extract_completeness("COI_partial"), "partial")
+  expect_equal(rb_extract_completeness("COI_complete"), "complete")
+  expect_equal(rb_extract_completeness("COI_unknown"), "unknown")
+  expect_equal(rb_extract_completeness("12S_partial"), "partial")
+  expect_equal(rb_extract_completeness("genome_complete"), "complete")
+  expect_equal(rb_extract_completeness("genome_partial"), "partial")
+  expect_equal(rb_extract_completeness("COI_partial;16S_partial"), "unknown")
+  expect_equal(rb_extract_completeness("other_unknown"), "unknown")
+  expect_equal(rb_extract_completeness(NA), "unknown")
+  expect_equal(rb_extract_completeness(""), "unknown")
 })

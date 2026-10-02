@@ -163,7 +163,7 @@ rb_list_taxa <- function(con, rank = "species", occurrence = NULL, marker = NULL
   rank_sql <- DBI::dbQuoteIdentifier(con, rank)
   tbl <- DBI::dbQuoteIdentifier(con, table_name)
   conditions <- rb_sql_conditions(con, occurrence = occurrence, marker = marker, qc_flag = qc_flag, exact = exact)
-  sql <- paste0("select ", rank_sql, " as ", rank, ", count(*) as n_sequences from ", tbl)
+  sql <- paste0("select ", rank_sql, " as ", rank_sql, ", count(*) as n_sequences from ", tbl)
   if (length(conditions) > 0) {
     sql <- paste(sql, "where", paste(conditions, collapse = " and "))
   }

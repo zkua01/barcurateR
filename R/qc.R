@@ -129,20 +129,21 @@ rb_screen_numts <- function(sequences, numt_fasta, min_match_length = 50) {
 #' Functions to check individual sequences or groups of sequences for
 #' common quality issues.
 #'
-#' * `rb_check_codons()`: Checks coding sequences for stop codons/frameshifts.
-#' * `rb_check_rrna_integrity()`: Checks rRNA sequences for length and gaps.
-#' * `rb_check_genome_completeness()`: Flags complete genomes missing markers.
-#' * `rb_check_divergence()`: Detects phylogenetically divergent sequences.
+#' * `rb_check_codons()`: Checks coding sequences (COI) for
+#'   stop codons and frameshifts.
+#' * `rb_check_rrna_integrity()`: Checks rRNA sequences (12S, 16S) for
+#'   abnormal length and non-ACGT characters.
+#' * `rb_check_divergence()`: Detects phylogenetically divergent sequences
+#'   within species/gene groups using MAFFT alignment and FastTree.
 #'
 #' @param sequence A single DNA sequence string.
-#' @param gene The gene/marker type (e.g., `"COI"`, `"12S"`).
+#' @param gene The gene/marker type (e.g., `"COI"`, `"12S"`, `"genome"`).
 #' @param coding_genes Gene types to check for codon issues.
+#'   Default `c("COI")`.
 #' @param genetic_code Genetic code table (default `"2"` for vertebrate mtDNA).
 #' @param rrna_genes Gene types to check for rRNA integrity.
 #' @param min_length Minimum expected length for rRNA sequences.
 #' @param data A data frame containing sequences and metadata.
-#' @param required_genes Genes required for a complete genome.
-#' @param genome_gene Label for complete genome records.
 #' @param species_col,gene_col,sequence_col,id_col Column names.
 #' @param min_seqs Minimum sequences per group for divergence analysis.
 #' @param outlier_mult Multiplier for median edge length to find outliers.
@@ -152,7 +153,6 @@ rb_screen_numts <- function(sequences, numt_fasta, min_match_length = 50) {
 #' @return
 #' * `rb_check_codons()` returns a list with `has_stop`, `frameshifted`, `best_frame`.
 #' * `rb_check_rrna_integrity()` returns a list with `has_short`, `has_gaps`.
-#' * `rb_check_genome_completeness()` returns `data` with a `genome_flag` column.
 #' * `rb_check_divergence()` returns `data` with a `div_result` column.
 #'
 #' @family quality control
@@ -161,13 +161,13 @@ NULL
 
 #' @rdname rb_qc_checks
 #' @export
-rb_check_codons <- function(sequence, gene, coding_genes = c("COI", "complete_genome"),
+rb_check_codons <- function(sequence, gene,
+                            coding_genes = c("COI"),
                             genetic_code = "2") {
   if (!gene %in% coding_genes) {
     return(list(has_stop = NA, frameshifted = NA, best_frame = NA))
   }
   
-  # Early return for empty or degenerate sequences
   seq_clean <- gsub("[^ACGT]", "N", toupper(sequence))
   if (nchar(seq_clean) == 0 || !any(grepl("[ACGT]", seq_clean))) {
     return(list(has_stop = NA, frameshifted = NA, best_frame = NA))
@@ -175,7 +175,6 @@ rb_check_codons <- function(sequence, gene, coding_genes = c("COI", "complete_ge
   
   tryCatch({
     gc_table <- Biostrings::getGeneticCode(genetic_code)
-    
     frame_translations <- lapply(0:2, function(frame) {
       subseq <- substr(seq_clean, frame + 1, nchar(seq_clean))
       subseq <- substr(subseq, 1, nchar(subseq) - (nchar(subseq) %% 3))
@@ -206,29 +205,6 @@ rb_check_rrna_integrity <- function(sequence, gene, rrna_genes = c("12S", "16S")
     has_short = nchar(sequence) < min_length,
     has_gaps = grepl("[^ACGT]", sequence)
   )
-}
-
-#' @rdname rb_qc_checks
-#' @export
-rb_check_genome_completeness <- function(data, required_genes = c("COI", "12S"),
-                                         genome_gene = "complete_genome",
-                                         species_col = "species", gene_col = "gene") {
-  rb_required_columns(data, c(species_col, gene_col))
-  
-  species_has_genes <- stats::aggregate(
-    data[[gene_col]],
-    by = list(species = data[[species_col]]),
-    FUN = function(genes) all(required_genes %in% genes)
-  )
-  names(species_has_genes) <- c(species_col, "has_required_genes")
-  
-  data <- merge(data, species_has_genes, by = species_col, all.x = TRUE)
-  data$genome_flag <- ifelse(
-    data[[gene_col]] == genome_gene & !data$has_required_genes,
-    "missing_genes", NA_character_
-  )
-  data$has_required_genes <- NULL
-  data
 }
 
 #' @rdname rb_qc_checks
@@ -318,8 +294,6 @@ rb_check_divergence <- function(data, species_col = "species", gene_col = "gene"
 #' @param min_divergence_seqs Minimum sequences for divergence analysis.
 #' @param parallel_workers Number of parallel workers.
 #' @param coding_genes,rrna_genes Gene types for checks.
-#' @param required_genome_genes Required genes for genome completeness.
-#' @param genome_gene Label for complete genome records.
 #'
 #' @return The input data frame with a `qc_flag` column added.
 #' @family quality control
@@ -372,16 +346,31 @@ rb_compile_qc_flags <- function(data,
 #' @rdname rb_qc_pipeline
 #' @export
 rb_run_qc_pipeline <- function(data, blast_db, numt_fasta = NULL,
-                                species_col = "species", gene_col = "gene",
-                                sequence_col = "sequence", id_col = "unique_code",
-                                min_divergence_seqs = 5, parallel_workers = 1,
-                                coding_genes = c("COI", "complete_genome"),
-                                rrna_genes = c("12S", "16S"),
-                                required_genome_genes = c("COI", "12S"),
-                                genome_gene = "complete_genome") {
+                               species_col = "species", gene_col = "gene",
+                               sequence_col = "sequence", id_col = "unique_code",
+                               min_divergence_seqs = 5, parallel_workers = 1,
+                               coding_genes = c("COI"),
+                               rrna_genes = c("12S", "16S")) {
   rb_required_columns(data, c(species_col, gene_col, sequence_col, id_col))
   data[[sequence_col]] <- rb_clean_sequence(data[[sequence_col]])
-
+  
+  # Ensure seq_status exists
+  if (!"seq_status" %in% names(data)) {
+    data$seq_status <- "unknown"
+  }
+  
+  # Remove stale QC columns from any previous pass
+  stale_cols <- intersect(names(data), c(
+    "div_result", "qc_flag",
+    "is_contaminant", "is_numt",
+    "has_stop", "frameshifted",
+    "has_short", "has_gaps",
+    "genome_flag"
+  ))
+  if (length(stale_cols) > 0) {
+    data <- data[, setdiff(names(data), stale_cols), drop = FALSE]
+  }
+  
   if (parallel_workers > 1) {
     future::plan(future::multisession, workers = parallel_workers)
     on.exit(future::plan(future::sequential), add = TRUE)
@@ -389,55 +378,63 @@ rb_run_qc_pipeline <- function(data, blast_db, numt_fasta = NULL,
   } else {
     map2_fn <- purrr::map2
   }
-
+  
   message(">>> Screening contaminants")
   data$is_contaminant <- rb_screen_contaminants(
-    data[[sequence_col]], blast_db, threads = parallel_workers)
-
+    data[[sequence_col]], blast_db, threads = parallel_workers
+  )
+  
   message(">>> Screening NUMTs")
   data$is_numt <- if (!is.null(numt_fasta)) {
     rb_screen_numts(data[[sequence_col]], numt_fasta)
   } else {
     FALSE
   }
-
+  
   message(">>> Checking codon integrity")
-  codon <- map2_fn(data[[sequence_col]], data[[gene_col]],
-                    function(seq, gene) rb_check_codons(seq, gene, coding_genes = coding_genes))
+  codon <- map2_fn(
+    data[[sequence_col]], data[[gene_col]],
+    function(seq, gene) rb_check_codons(seq, gene, coding_genes = coding_genes)
+  )
   data$has_stop <- vapply(codon, function(x) isTRUE(x$has_stop), logical(1))
   data$frameshifted <- vapply(codon, function(x) isTRUE(x$frameshifted), logical(1))
-
+  
   message(">>> Checking rRNA integrity")
-  rrna <- map2_fn(data[[sequence_col]], data[[gene_col]],
-                   function(seq, gene) rb_check_rrna_integrity(seq, gene, rrna_genes = rrna_genes))
+  rrna <- map2_fn(
+    data[[sequence_col]], data[[gene_col]],
+    function(seq, gene) rb_check_rrna_integrity(seq, gene, rrna_genes = rrna_genes)
+  )
   data$has_short <- vapply(rrna, function(x) isTRUE(x$has_short), logical(1))
   data$has_gaps <- vapply(rrna, function(x) isTRUE(x$has_gaps), logical(1))
-
-  message(">>> Checking genome completeness")
-  data <- rb_check_genome_completeness(
-    data, required_genes = required_genome_genes, genome_gene = genome_gene,
-    species_col = species_col, gene_col = gene_col
-  )
 
   message(">>> Checking divergence")
   data <- rb_check_divergence(
     data, species_col = species_col, gene_col = gene_col,
-    sequence_col = sequence_col, id_col = id_col, min_seqs = min_divergence_seqs
+    sequence_col = sequence_col, id_col = id_col,
+    min_seqs = min_divergence_seqs
   )
-
+  
   message(">>> Compiling QC flags")
   extra_fn <- function(d) {
     flags <- rep("", nrow(d))
     add <- function(cond, label) {
-      flags[cond] <<- ifelse(nzchar(flags[cond]), paste(flags[cond], label, sep = "|"), label)
+      flags[cond] <- ifelse(
+        nzchar(flags[cond]),
+        paste(flags[cond], label, sep = "|"),
+        label
+      )
     }
-    add(!is.na(d$genome_flag) & d$genome_flag == "missing_genes", "incomplete_genome")
     add(!is.na(d$div_result) & d$div_result == "divergent", "divergent")
-    add(!is.na(d$div_result) & d$div_result %in% c("tree_error", "high_length_variation", "processing_error"),
-        paste0("tree_", d$div_result))
+    add(
+      !is.na(d$div_result) & d$div_result %in% c(
+        "tree_error", "high_length_variation", "processing_error"
+      ),
+      paste0("tree_", d$div_result)
+    )
     add(d[[gene_col]] == "other", "manual_review_needed")
     flags
   }
+  
   rb_compile_qc_flags(data, extra_flag_fn = extra_fn)
 }
 
@@ -464,20 +461,17 @@ rb_check_ambiguous_content <- function(sequence, max_n_fraction = 0.1) {
 default_extra_flags <- function(data) {
   vapply(seq_len(nrow(data)), function(i) {
     flags <- c()
-    
-    if (!is.na(data$genome_flag[i]) && data$genome_flag[i] == "missing_genes") {
-      flags <- c(flags, "incomplete_genome")
-    }
     if (!is.na(data$div_result[i]) && data$div_result[i] == "divergent") {
       flags <- c(flags, "divergent")
     }
-    if (!is.na(data$div_result[i]) && data$div_result[i] %in% c("tree_error", "high_length_variation", "processing_error")) {
+    if (!is.na(data$div_result[i]) && data$div_result[i] %in% c(
+      "tree_error", "high_length_variation", "processing_error"
+    )) {
       flags <- c(flags, paste0("tree_", data$div_result[i]))
     }
-    if (data$gene[i] == "other") {
+    if ("gene" %in% names(data) && data$gene[i] == "other") {
       flags <- c(flags, "manual_review_needed")
     }
-    
     paste(flags, collapse = "|")
   }, character(1))
 }

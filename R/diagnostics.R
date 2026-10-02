@@ -85,7 +85,7 @@ rb_marker_coverage <- function(con, rank = "species", table_name = "reference_fi
   rank_sql <- as.character(DBI::dbQuoteIdentifier(con, rank))
   tbl <- DBI::dbQuoteIdentifier(con, table_name)
   sql <- paste0(
-    "select ", rank_sql, " as ", rank, ", seq_type, count(*) as n_sequences, ",
+    "select ", rank_sql, " as ", rank_sql, ", seq_type, count(*) as n_sequences, ",
     "count(distinct source) as n_sources from ", tbl,
     " where qc_flag = 'pass' group by ", rank_sql, ", seq_type ",
     "order by ", rank_sql, ", seq_type"
