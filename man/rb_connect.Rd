@@ -17,10 +17,13 @@ rb_disconnect(con)
 rb_tables(con)
 
 rb_read_table(con, table)
+
+rb_available_datasets()
 }
 \arguments{
 \item{path}{Path to a SQLite database file. If \code{NULL}, the default
-bundled demo database is used.}
+configured database is resolved (downloaded if requested, or the
+first available local database is used).}
 
 \item{download}{Logical. If \code{TRUE} and the database file does not exist,
 attempt to download it from the default URL.}
@@ -38,6 +41,8 @@ attempt to download it from the default URL.}
 \item \code{rb_tables()} returns a data frame with columns \code{table} and \code{n_rows}.
 \item \code{rb_read_table()} returns a data frame containing the table contents.
 \item \code{rb_available_datasets()} returns a data frame with columns \code{name}, \code{version}, and \code{path}.
+It searches the package's \code{extdata} directory, the \code{barcurateR} cache directory,
+and the legacy \code{regionbarcoder} cache directory for any \code{.db} or \code{.sqlite} files.
 }
 }
 \description{
@@ -49,19 +54,23 @@ with curated reference sequence databases.
 \item \code{rb_disconnect()}: Safely closes an active database connection.
 \item \code{rb_tables()}: Lists all tables in the database with row counts.
 \item \code{rb_read_table()}: Reads an entire table into a data frame.
-\item \code{rb_available_datasets()}: Lists available bundled or local databases.
+\item \code{rb_available_datasets()}: Lists all available bundled, cached, or legacy databases.
 }
 }
 \details{
 The default database resolution order in \code{rb_connect()} when \code{path = NULL} is:
 \enumerate{
 \item If \code{download = TRUE} and no cached file exists, download from \code{rb_db_url()}.
-\item Otherwise, use the first path from \code{rb_available_datasets()}.
+\item Otherwise, use the best available local database (preferring \code{full-local} YZFishDB
+over \code{demo} or \code{user-curated} databases).
 }
 }
 \examples{
 \dontrun{
-# Connect to the bundled demo database
+# List all available local databases
+avail <- rb_available_datasets()
+
+# Connect to the default database
 con <- rb_connect()
 rb_tables(con)
 
