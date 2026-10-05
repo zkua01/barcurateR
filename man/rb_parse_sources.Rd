@@ -48,8 +48,9 @@ mentions such as tRNA, ND, or ATP genes.}
 \item{source_name}{Short label for the source, for example \code{"ncbi"} or
 \code{"bold"}.}
 
-\item{column_map}{Named character vector mapping standardized column
-names to column names in \code{raw}.}
+\item{column_map}{A named character vector where the names are the desired
+standardized column names and the values are the corresponding column names
+in \code{raw} (e.g., \code{c(species = "scientific_name")}).}
 
 \item{marker_fn}{Function used to derive marker type from a description
 column. Default is \code{rb_extract_markers()}.}
@@ -97,7 +98,7 @@ and source-specific metadata may also be retained.
 \code{rb_parse_source_table()} uses a user-supplied \code{column_map} to rename
 raw columns into the standardized schema. If a description column is
 provided, marker type is inferred using \code{rb_extract_markers()} and then
-simplified with the internal helper \code{rb_simplify_seq_type()}.
+simplified into standardized \code{seq_type} labels (e.g., "\code{COI}", "\code{other_unknown}").
 }
 \examples{
 \dontrun{

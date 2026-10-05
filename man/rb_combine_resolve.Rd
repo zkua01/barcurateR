@@ -45,7 +45,9 @@ review before resolving.}
 \itemize{
 \item \code{rb_combine_sources()} returns a combined data frame with duplicated
 species-sequence combinations removed.
-\item \code{rb_resolve_ambiguous()} returns a resolved data frame.
+\item \code{rb_resolve_ambiguous()} returns the input data frame with ambiguous rows
+removed or replaced according to the \code{resolution_table} (or \code{on_unresolved} rules
+if no table is provided).
 }
 }
 \description{

@@ -47,7 +47,8 @@ rb_run_barcode_gap(
 be considered diagnostic. Default \code{0.9}.}
 
 \item{max_other}{Maximum number of non-focal sequences to use when
-computing global inter-specific distances. Default \code{2000}.}
+computing global inter-specific distances. Default \code{500} in \code{rb_diagnostic_sites()}
+and \code{2000} in \code{rb_barcode_gap_species()}.}
 
 \item{species_name}{Species to analyze in \code{rb_barcode_gap_species()}.}
 
@@ -136,6 +137,8 @@ automatically falls back to serial execution for that marker.
 Distance calculations use \code{rb_string_dist()}, which prefers
 \code{pwalign::stringDist()} and falls back to \code{Biostrings::stringDist()}
 on older Biostrings versions.
+
+When \code{parallel = TRUE}, progress bars are displayed via the \code{pbapply} package.
 }
 \section{Output columns}{
 

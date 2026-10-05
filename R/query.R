@@ -22,7 +22,8 @@
 #' @param source Optional character vector of source names to filter by
 #'   (e.g., `"ncbi"`, `"bold"`).
 #' @param occurrence Optional character vector of occurrence categories
-#'   to filter by (e.g., `"native"`, `"introduced"`).
+#'   to filter by (e.g., `"native"`, `"introduced"`). Requires `occurrence`
+#'   column to be present.
 #' @param qc_flag QC flag filter. Default `"pass"`. When `exact = FALSE`,
 #'   non-`"pass"` values are matched using SQL `LIKE '%value%'`. When
 #'   `exact = TRUE`, exact equality is used. Set to `NULL` to skip
@@ -223,7 +224,6 @@ rb_taxonomy <- function(con, species = NULL, qc_flag = "pass", exact = FALSE, ta
   
   conditions <- rb_sql_conditions(con, species = species, qc_flag = if (use_qc) qc_flag else NULL, exact = exact)
   tbl <- DBI::dbQuoteIdentifier(con, table_name)
-  order_col <- DBI::dbQuoteIdentifier(con, "order")
   sql <- paste(
     "select distinct", paste(as.character(DBI::dbQuoteIdentifier(con, select_cols)), collapse = ", "), "from", tbl
   )

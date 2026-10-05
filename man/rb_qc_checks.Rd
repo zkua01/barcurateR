@@ -68,11 +68,18 @@ common quality issues.
 \itemize{
 \item \code{rb_check_codons()}: Checks coding sequences (COI) for
 stop codons and frameshifts.
-\item \code{rb_check_rrna_integrity()}: Checks rRNA sequences (12S, 16S) for
-abnormal length and non-ACGT characters.
+\item \code{rb_check_rrna_integrity()}: Checks rRNA sequences (12S, 16S) for abnormal
+length and the presence of any non-ACGT characters (including alignment gaps
+and ambiguous IUPAC codes like 'N').
 \item \code{rb_check_divergence()}: Detects phylogenetically divergent sequences
 within species/gene groups using MAFFT alignment and FastTree.
 }
+}
+\details{
+Note: This function relies on shell pipes (|) to stream MAFFT output into FastTree.
+While this works on Unix-like systems, Windows users may need to ensure their shell
+environment (e.g., Git Bash or WSL) is properly configured, or install MSYS2, as the
+default cmd.exe may not support these pipes.
 }
 \seealso{
 Other quality control:

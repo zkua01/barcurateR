@@ -10,9 +10,11 @@
 #'
 #' @param sequences Character vector of DNA sequences to screen.
 #' @param blast_db Path prefix to a BLAST nucleotide database.
-#' @param perc_identity Minimum percent identity for BLAST hits.
+#' @param perc_identity Minimum percent identity passed directly to BLAST 
+#'   -perc_identify flag as a hard pre-filter for BLAST hits.
 #' @param evalue E-value threshold for BLAST hits.
-#' @param min_pident Minimum percent identity to flag as contaminant.
+#' @param min_pident Post-filter minimum percent identity threshold applied to 
+#'   the BLAST results to flag as contaminant.
 #' @param min_length Minimum alignment length to flag as contaminant.
 #' @param threads Number of BLAST threads.
 #' @param blastn Path to the `blastn` executable.
@@ -131,8 +133,9 @@ rb_screen_numts <- function(sequences, numt_fasta, min_match_length = 50) {
 #'
 #' * `rb_check_codons()`: Checks coding sequences (COI) for
 #'   stop codons and frameshifts.
-#' * `rb_check_rrna_integrity()`: Checks rRNA sequences (12S, 16S) for
-#'   abnormal length and non-ACGT characters.
+#' * `rb_check_rrna_integrity()`: Checks rRNA sequences (12S, 16S) for abnormal
+#'   length and the presence of any non-ACGT characters (including alignment gaps
+#'   and ambiguous IUPAC codes like 'N').
 #' * `rb_check_divergence()`: Detects phylogenetically divergent sequences
 #'   within species/gene groups using MAFFT alignment and FastTree.
 #'
@@ -154,6 +157,13 @@ rb_screen_numts <- function(sequences, numt_fasta, min_match_length = 50) {
 #' * `rb_check_codons()` returns a list with `has_stop`, `frameshifted`, `best_frame`.
 #' * `rb_check_rrna_integrity()` returns a list with `has_short`, `has_gaps`.
 #' * `rb_check_divergence()` returns `data` with a `div_result` column.
+#' 
+#' @details
+#' Note: This function relies on shell pipes (|) to stream MAFFT output into FastTree. 
+#' While this works on Unix-like systems, Windows users may need to ensure their shell 
+#' environment (e.g., Git Bash or WSL) is properly configured, or install MSYS2, as the 
+#' default cmd.exe may not support these pipes.
+#' 
 #'
 #' @family quality control
 #' @name rb_qc_checks
@@ -346,7 +356,7 @@ rb_compile_qc_flags <- function(data,
 #' @rdname rb_qc_pipeline
 #' @export
 rb_run_qc_pipeline <- function(data, blast_db, numt_fasta = NULL,
-                               species_col = "species", gene_col = "gene",
+                               species_col = "species", gene_col = "seq_type",
                                sequence_col = "sequence", id_col = "unique_code",
                                min_divergence_seqs = 5, parallel_workers = 1,
                                coding_genes = c("COI"),

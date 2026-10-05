@@ -19,7 +19,7 @@
 #' @param qc_flag Character vector of QC flags to include from the reference database (e.g., `"pass"`, `"manual_review_needed"`). Passed to `rb_get_sequences()`. Defaults to `"pass"`.
 #' @param method Assignment method: `"blastn"` (uses BLAST+) or `"exact"` (dependency-free exact matching mode).
 #' @param min_identity Minimum percent identity for a confident assignment.
-#' @param min_coverage Minimum combined coverage (`ccovs`) for high-confidence assignment. Applied as a proportion (e.g., `0.9` for 90%). Combined coverage is calculated as the geometric mean of query and subject coverage.
+#' @param min_coverage Minimum coverage threshold. In `rb_assign_blast()`, this is applied as a pre-filter on query coverage (`qcov`). In `rb_score_assignments()`, it is applied to combined coverage (`ccovs`) for high/low confidence assignment. Applied as a proportion (e.g., `0.9` for 90%). Combined coverage is calculated as the geometric mean of query and subject coverage.
 #' @param max_target_seqs Maximum number of target sequences to retain per ASV in BLASTn. Defaults to 100 to ensure that ties across many congeneric species are not prematurely dropped by the BLAST algorithm.
 #' @param out_dir Directory for temporary BLASTn files.
 #' @param blastn Path to the `blastn` executable.
@@ -44,7 +44,7 @@
 #' @details
 #' When `method = "blastn"`, BLAST+ must be installed and `blastn` and `makeblastdb` must be available on the system path.
 #' 
-#' The assignment pipeline utilizes advanced alignment mettrics to prevent common BLAST biases. It calculates subject coverage (`scovs`), combined coverage (`ccovs` = sqrt(qcov * scovs)), and bitscore per base (`bitscore_pb`). Hits are ranked using a robust hierarchy: `-bitscore`, `-bitscore_pb`, `evalue`, `-ccovs`, `-pident`.
+#' The assignment pipeline utilizes advanced alignment metrics to prevent common BLAST biases. It calculates subject coverage (`scovs`), combined coverage (`ccovs` = sqrt(qcov * scovs)), and bitscore per base (`bitscore_pb`). Hits are ranked using a robust hierarchy: `-bitscore`, `-bitscore_pb`, `evalue`, `-ccovs`, `-pident`.
 #' 
 #' The `assignment_status` column classifies the result:
 #' \itemize{
@@ -55,6 +55,21 @@
 #'  }
 #' 
 #' For ties, the `tie_taxa` column contains a pipe-separated (`|`) string of the tied species names (e.g., `"Species A|Species B"`). If there is no tie, this column is `NA`.
+#' 
+#' @examples
+#' \dontrun{
+#' # Assign ASVs using exact matching (no BLAST+ required)
+#' assignment <- rb_assign_edna(
+#'   asv_fasta = "asvs.fasta",
+#'   db_path = "curated_ref.db",
+#'   marker = "12S",
+#'   method = "exact"
+#' )
+#'
+#' # Build a species-by-sample matrix
+#' asv_counts <- read.csv("asv_table.csv")
+#' species_matrix <- rb_build_species_matrix(assignment, asv_counts)
+#' }
 #' 
 #' @name rb_assignment
 #' @family taxonomic assignment

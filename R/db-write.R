@@ -45,7 +45,7 @@
 #' | Barcode gap metrics | `barcode_gap_metrics` |
 #' | Ambiguity archive | `ambiguous_sequences` |
 #'
-#' Before writing, `rb_prepare_reference_table()` ensures that the following
+#' Before writing, the function automatically ensures that the following
 #' columns exist (adding defaults where missing):
 #'
 #' * `qc_flag` (default `"pass"`)

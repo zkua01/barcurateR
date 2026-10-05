@@ -63,7 +63,8 @@ taxonomic rank.}
 (e.g., \code{"ncbi"}, \code{"bold"}).}
 
 \item{occurrence}{Optional character vector of occurrence categories
-to filter by (e.g., \code{"native"}, \code{"introduced"}).}
+to filter by (e.g., \code{"native"}, \code{"introduced"}). Requires \code{occurrence}
+column to be present.}
 
 \item{qc_flag}{QC flag filter. Default \code{"pass"}. When \code{exact = FALSE},
 non-\code{"pass"} values are matched using SQL \verb{LIKE '\%value\%'}. When

@@ -39,6 +39,18 @@
 #' 1. The `BARCURATER_DB_URL` environment variable.
 #' 2. The `barcurateR.db_url` global option.
 #' 3. The default YZFishDB Zenodo URL.
+#' 
+#' @examples
+#' \dontrun{
+#' # Check if the database is already installed
+#' rb_db_available()
+#'
+#' # Get the path where the database will be installed
+#' rb_db_path()
+#'
+#' # Install the YZFishDB database (downloads from Zenodo)
+#' rb_install_db()
+#' }
 #'
 #' @name rb_db_install
 #' @family database management

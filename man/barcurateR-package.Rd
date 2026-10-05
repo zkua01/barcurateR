@@ -21,6 +21,11 @@ ecological metabarcoding in a reproducible manner.
 }
 }
 
+\section{Vignette}{
+
+Please see the vignettes for a detailed walkthrough of the curation and assignment workflows (\code{browseVignettes("barcurateR")})
+}
+
 \author{
 \strong{Maintainer}: Zi Xun Kua \email{zixunkua@gmail.com}
 

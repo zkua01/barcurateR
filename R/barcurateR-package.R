@@ -11,6 +11,10 @@
 #' 3. Run the full curation pipeline ([rb_curate_reference()])
 #' 4. Query and export the curated database ([rb_get_sequences()], [rb_export_fasta()])
 #' 5. Assign eDNA sequences ([rb_assign_edna()])
+#' 
+#' @section Vignette:
+#' Please see the vignettes for a detailed walkthrough of the curation and assignment workflows (`browseVignettes("barcurateR")`)
+#' 
 #'
 #' @docType package
 #' @importFrom magrittr %>%

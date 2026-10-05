@@ -8,7 +8,10 @@
 #' * `rb_build_contaminant_db()`: Downloads sequences from NCBI based on
 #'   an organisms table, saving one FASTA file per category.
 #' * `rb_build_blast_db()`: Combines FASTA files and builds a nucleotide
-#'   BLAST database using `makeblastdb`.
+#'   BLAST database using `makeblastdb`. Creates an intermediate combined 
+#'   FASTA file (e.g., `prefix_combined.fasta`) in the same directory as 
+#'   the `out_prefix`. This file is retained on disk after BLAST database 
+#'   is built.
 #'
 #' @param organisms A data frame with columns:
 #'   * `type`: Either `"accession"` (direct `entrez_fetch`) or `"query"`

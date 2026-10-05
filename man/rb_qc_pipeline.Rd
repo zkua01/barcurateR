@@ -19,7 +19,7 @@ rb_run_qc_pipeline(
   blast_db,
   numt_fasta = NULL,
   species_col = "species",
-  gene_col = "gene",
+  gene_col = "seq_type",
   sequence_col = "sequence",
   id_col = "unique_code",
   min_divergence_seqs = 5,

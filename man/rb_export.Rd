@@ -35,7 +35,7 @@ taxonomic ranks: \code{kingdom}, \code{phylum}, \code{class}, \code{order}, \cod
 or \code{"usearch"}. Used by \code{rb_export_fasta()}.}
 
 \item{taxonomy_file}{Output taxonomy TSV file path. Required for
-\code{rb_export_qiime2()}.}
+\code{rb_export_qiime2()} and \code{rb_export_fasta(format = "qiime2")}.}
 
 \item{fasta_file}{Output FASTA file path. Used by the format-specific
 export functions.}
@@ -74,9 +74,9 @@ rb_export_dada2(pass_refs, "reference_dada2.fasta")
 
 Header styles differ by format:\tabular{ll}{
    Format \tab Example header style \cr
-   BLAST \tab \verb{>seq_id; Kingdom; Phylum; Class; ...} \cr
+   BLAST \tab \verb{>seq_id;Kingdom;Phylum;Class;...} \cr
    DADA2 \tab \verb{>seq_id;tax=Kingdom;Phylum;Class;...} \cr
-   USEARCH \tab \verb{>seq_id tax=Kingdom;Phylum;Class;...} \cr
+   USEARCH \tab \verb{>seq_id tax=k__Kingdom;p__Phylum;c__Class;...} \cr
    QIIME2 \tab Plain FASTA headers plus separate taxonomy TSV \cr
 }
 }

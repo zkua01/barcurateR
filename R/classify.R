@@ -29,9 +29,27 @@ if (getRversion() >= "2.15.1") {
 #'
 #' @return
 #' * `rb_sequence_features()` returns a data frame of computed features (`length`, `gc_content`, `at_content`, `gc_skew`, `at_skew`).
-#' * `rb_train_classifier()` returns a list containing the trained model (`workflows::workflow()` fit), performance metrics, and test set results.
+#' * `rb_train_classifier()` returns a list with elements: `model` (fitted workflow), `metrics` (yardstick metrics or NULL), `test_results` (test set predictions), `conf_matrix` (confusion matrix or NULL), `label_col`, and `features`.
 #' * `rb_classify_sequences()` returns the input `data` augmented with `predicted_class`, `confidence_score`, `final_type`, and `prediction_source` columns.
 #'
+#' @details
+#' These functions require the tidymodels packages (`parsnip`, `recipes`, `rsample`, `yardstick`, `workflows`) and the `ranger` engine. Install them with `install.packages('tidymodels')` and `install.packages('ranger')`.
+#' 
+#' @examples
+#' \dontrun{
+#' # Extract features
+#' features <- rb_sequence_features(refs$sequence)
+#' features$seq_type <- refs$seq_type
+#'
+#' # Train classifier
+#' model <- rb_train_classifier(features, label_col = "seq_type")
+#' model$metrics
+#'
+#' # Classify unknown sequences
+#' predictions <- rb_classify_sequences(model, unknown_data)
+#' table(predictions$prediction_source)
+#' }
+#' 
 #' @name rb_classification
 #' @family machine learning
 NULL

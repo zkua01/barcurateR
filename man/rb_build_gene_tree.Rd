@@ -59,7 +59,8 @@ A list containing:
 \item{n_tips}{The number of tips in the tree.}
 }
 Returns \code{NULL} (with a warning) if fewer than \code{min_seqs} sequences
-remain after filtering.
+remain after filtering. Alignment or distance computation errors will
+propagate to the caller.
 }
 \description{
 Builds a neighbor-joining phylogenetic tree for a single gene or marker

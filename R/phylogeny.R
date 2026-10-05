@@ -38,7 +38,8 @@
 #'   \item{n_tips}{The number of tips in the tree.}
 #' }
 #' Returns `NULL` (with a warning) if fewer than `min_seqs` sequences
-#' remain after filtering.
+#' remain after filtering. Alignment or distance computation errors will
+#' propagate to the caller.
 #'
 #' @details
 #' The function performs the following steps:

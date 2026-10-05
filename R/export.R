@@ -21,7 +21,7 @@
 #' @param fasta_file Output FASTA file path. Used by the format-specific
 #'   export functions.
 #' @param taxonomy_file Output taxonomy TSV file path. Required for
-#'   `rb_export_qiime2()`.
+#'   `rb_export_qiime2()` and `rb_export_fasta(format = "qiime2")`.
 #'
 #' @return
 #' * `rb_export_fasta()`, `rb_export_blastn()`, `rb_export_dada2()`, and
@@ -45,9 +45,9 @@
 #'
 #' | Format | Example header style |
 #' |---|---|
-#' | BLAST | `>seq_id; Kingdom; Phylum; Class; ...` |
+#' | BLAST | `>seq_id;Kingdom;Phylum;Class;...` |
 #' | DADA2 | `>seq_id;tax=Kingdom;Phylum;Class;...` |
-#' | USEARCH | `>seq_id tax=Kingdom;Phylum;Class;...` |
+#' | USEARCH | `>seq_id tax=k__Kingdom;p__Phylum;c__Class;...` |
 #' | QIIME2 | Plain FASTA headers plus separate taxonomy TSV |
 #'
 #' @examples

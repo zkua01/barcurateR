@@ -25,7 +25,7 @@
 #' `rb_parse_source_table()` uses a user-supplied `column_map` to rename
 #' raw columns into the standardized schema. If a description column is
 #' provided, marker type is inferred using `rb_extract_markers()` and then
-#' simplified with the internal helper `rb_simplify_seq_type()`.
+#' simplified into standardized `seq_type` labels (e.g., "`COI`", "`other_unknown`").
 #'
 #' @param description Free-text sequence description, for example a GenBank
 #'   definition line.
@@ -40,8 +40,9 @@
 #' @param raw Raw data frame as read from a source file.
 #' @param source_name Short label for the source, for example `"ncbi"` or
 #'   `"bold"`.
-#' @param column_map Named character vector mapping standardized column
-#'   names to column names in `raw`.
+#' @param column_map A named character vector where the names are the desired 
+#'   standardized column names and the values are the corresponding column names
+#'   in `raw` (e.g., `c(species = "scientific_name")`).
 #' @param marker_fn Function used to derive marker type from a description
 #'   column. Default is `rb_extract_markers()`.
 #' @param description_col Optional name of a free-text description column
@@ -352,7 +353,9 @@ rb_remove_primers <- function(sequence, f_primer_seqs = NA_character_,
 #' @return
 #' * `rb_combine_sources()` returns a combined data frame with duplicated
 #'   species-sequence combinations removed.
-#' * `rb_resolve_ambiguous()` returns a resolved data frame.
+#' * `rb_resolve_ambiguous()` returns the input data frame with ambiguous rows 
+#'   removed or replaced according to the `resolution_table` (or `on_unresolved` rules
+#'   if no table is provided).
 #'
 #' @details
 #' Ambiguous sequences are sequences that appear under more than one

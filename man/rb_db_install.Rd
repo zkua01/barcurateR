@@ -93,6 +93,19 @@ The download URL is determined by:
 \item The default YZFishDB Zenodo URL.
 }
 }
+\examples{
+\dontrun{
+# Check if the database is already installed
+rb_db_available()
+
+# Get the path where the database will be installed
+rb_db_path()
+
+# Install the YZFishDB database (downloads from Zenodo)
+rb_install_db()
+}
+
+}
 \seealso{
 Other database management:
 \code{\link[=rb_connect]{rb_connect()}}

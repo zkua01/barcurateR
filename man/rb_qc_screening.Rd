@@ -24,11 +24,13 @@ rb_screen_numts(sequences, numt_fasta, min_match_length = 50)
 
 \item{blast_db}{Path prefix to a BLAST nucleotide database.}
 
-\item{perc_identity}{Minimum percent identity for BLAST hits.}
+\item{perc_identity}{Minimum percent identity passed directly to BLAST
+-perc_identify flag as a hard pre-filter for BLAST hits.}
 
 \item{evalue}{E-value threshold for BLAST hits.}
 
-\item{min_pident}{Minimum percent identity to flag as contaminant.}
+\item{min_pident}{Post-filter minimum percent identity threshold applied to
+the BLAST results to flag as contaminant.}
 
 \item{min_length}{Minimum alignment length to flag as contaminant.}
 

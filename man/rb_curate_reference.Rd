@@ -62,27 +62,32 @@ in the SQLite database.}
 \item{db_path}{Optional path to write the final SQLite database.}
 
 \item{confidence_threshold}{Minimum prediction probability required for
-the ML classifier to reclassify an unknown sequence.}
+the ML classifier to reclassify an unknown sequence (only used if
+\code{run_classifier = TRUE}).}
 
-\item{min_length}{Minimum sequence length required for ML classification.}
+\item{min_length}{Minimum sequence length required for ML classification
+(only used if \code{run_classifier = TRUE}).}
 
-\item{classifier_trees}{Number of trees used by the Random Forest classifier.}
+\item{classifier_trees}{Number of trees used by the Random Forest classifier
+(only used if \code{run_classifier = TRUE}).}
 
 \item{barcode_gap_markers}{Optional character vector of markers to include
-in barcode gap analysis. If \code{NULL}, all markers except \code{"other"} are used.}
+in barcode gap analysis. If \code{NULL}, all markers except \code{"other"} are used
+(only used if \code{run_barcode_gap = TRUE}).}
 
 \item{barcode_gap_min_seqs}{Minimum number of sequences per species
-required for barcode gap analysis.}
+required for barcode gap analysis (only used if \code{run_barcode_gap = TRUE}).}
 
 \item{barcode_gap_parallel}{Logical. If \code{TRUE}, runs barcode gap analysis
-in parallel where supported.}
+in parallel where supported (only used if \code{run_barcode_gap = TRUE}).}
 
 \item{reference_table}{Name of the final reference table written to the
 SQLite database. Default \code{"reference_final"}.}
 
 \item{qc_table}{Name of the QC table. Default \code{"qc_reference"}.}
 
-\item{barcode_gap_table}{Name of the barcode gap table. Default \code{"barcode_gap_metrics"}.}
+\item{barcode_gap_table}{Name of the barcode gap table. Default
+\code{"barcode_gap_metrics"} (only used if \code{run_barcode_gap = TRUE}).}
 
 \item{ambiguity_table}{Name of the ambiguity table. Default \code{"ambiguous_sequences"}.}
 
@@ -102,9 +107,10 @@ One of \code{"stop"}, \code{"warn"}, or \code{"ignore"}.}
 \item{require_taxonomy}{Logical. If \code{TRUE}, requires the final curated
 table to contain full kingdom-to-species taxonomy.}
 
-\item{mafft}{Path to the \code{mafft} executable.}
+\item{mafft}{Path to the \code{mafft} executable (only used if \code{run_divergence = TRUE}).}
 
-\item{fasttree}{Path to the \code{FastTree} executable.}
+\item{fasttree}{Path to the \code{FastTree} executable (only used if
+\code{run_divergence = TRUE}).}
 }
 \value{
 An invisible list containing:
@@ -136,10 +142,13 @@ normally be resolved during standardization using \code{rb_resolve_ambiguous()}.
 }
 \examples{
 \dontrun{
-curated <- rb_curate_reference(
+# Run with ML classification and barcode gap analysis
+curated_full <- rb_curate_reference(
   data = standardized_data,
-  taxonomy_table = taxonomy_table,
-  db_path = tempfile(fileext = ".db")
+  taxonomy_table = tax_table,
+  run_classifier = TRUE,
+  run_barcode_gap = TRUE,
+  db_path = "curated_ref_full.sqlite")
 )
 }
 

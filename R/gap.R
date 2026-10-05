@@ -58,7 +58,8 @@
 #' @param seq_len Aligned sequence length used to normalize distances.
 #' @param marker Marker name associated with the aligned sequences.
 #' @param max_other Maximum number of non-focal sequences to use when
-#'   computing global inter-specific distances. Default `2000`.
+#'   computing global inter-specific distances. Default `500` in `rb_diagnostic_sites()`
+#'   and `2000` in `rb_barcode_gap_species()`.
 #' @param max_congeners Maximum number of congeneric sequences to use when
 #'   computing congeneric distances. Default `500`.
 #' @param focal_seqs Character vector of focal sequences for
@@ -94,7 +95,10 @@
 #' * `gap_may_be_undersampling_artifact`
 #' * `error_msg`
 #' * `assignment_risk`, `recommended_threshold`
-#'
+#' 
+#' @details
+#' When `parallel = TRUE`, progress bars are displayed via the `pbapply` package.
+#' 
 #' @examples
 #' \dontrun{
 #' gap_results <- rb_run_barcode_gap(

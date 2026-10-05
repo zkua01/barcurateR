@@ -50,6 +50,10 @@
 #' If the requested table does not exist in the database, `rb_barcode_gap()`
 #' and `rb_ambiguity()` return an empty data frame rather than throwing an
 #' error, allowing graceful degradation when optional tables are absent.
+#' 
+#' If the separate QC table (`qc_table_name`) does not exist in the database,
+#' `rb_qc_summary()` falls back to summarizing the `qc_flag` column in the main 
+#' reference table (`table_name`).
 #'
 #' @examples
 #' \dontrun{

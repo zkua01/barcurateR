@@ -61,7 +61,7 @@ rb_classify_sequences(
 \value{
 \itemize{
 \item \code{rb_sequence_features()} returns a data frame of computed features (\code{length}, \code{gc_content}, \code{at_content}, \code{gc_skew}, \code{at_skew}).
-\item \code{rb_train_classifier()} returns a list containing the trained model (\code{workflows::workflow()} fit), performance metrics, and test set results.
+\item \code{rb_train_classifier()} returns a list with elements: \code{model} (fitted workflow), \code{metrics} (yardstick metrics or NULL), \code{test_results} (test set predictions), \code{conf_matrix} (confusion matrix or NULL), \code{label_col}, and \code{features}.
 \item \code{rb_classify_sequences()} returns the input \code{data} augmented with \code{predicted_class}, \code{confidence_score}, \code{final_type}, and \code{prediction_source} columns.
 }
 }
@@ -73,5 +73,24 @@ and predict marker types for unknown sequences based on sequence composition.
 \item \code{rb_train_classifier()}: Trains a Random Forest model to classify sequences into marker types using the \code{tidymodels} framework.
 \item \code{rb_classify_sequences()}: Predicts marker types for new sequences using a trained model, applying confidence and length filtering.
 }
+}
+\details{
+These functions require the tidymodels packages (\code{parsnip}, \code{recipes}, \code{rsample}, \code{yardstick}, \code{workflows}) and the \code{ranger} engine. Install them with \code{install.packages('tidymodels')} and \code{install.packages('ranger')}.
+}
+\examples{
+\dontrun{
+# Extract features
+features <- rb_sequence_features(refs$sequence)
+features$seq_type <- refs$seq_type
+
+# Train classifier
+model <- rb_train_classifier(features, label_col = "seq_type")
+model$metrics
+
+# Classify unknown sequences
+predictions <- rb_classify_sequences(model, unknown_data)
+table(predictions$prediction_source)
+}
+
 }
 \concept{machine learning}

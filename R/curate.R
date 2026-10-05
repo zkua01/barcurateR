@@ -30,19 +30,24 @@
 #'   in the SQLite database.
 #' @param db_path Optional path to write the final SQLite database.
 #' @param confidence_threshold Minimum prediction probability required for
-#'   the ML classifier to reclassify an unknown sequence.
-#' @param min_length Minimum sequence length required for ML classification.
-#' @param classifier_trees Number of trees used by the Random Forest classifier.
+#'   the ML classifier to reclassify an unknown sequence (only used if 
+#'   `run_classifier = TRUE`).
+#' @param min_length Minimum sequence length required for ML classification 
+#'   (only used if `run_classifier = TRUE`).
+#' @param classifier_trees Number of trees used by the Random Forest classifier 
+#'   (only used if `run_classifier = TRUE`).
 #' @param barcode_gap_markers Optional character vector of markers to include
-#'   in barcode gap analysis. If `NULL`, all markers except `"other"` are used.
+#'   in barcode gap analysis. If `NULL`, all markers except `"other"` are used
+#'   (only used if `run_barcode_gap = TRUE`).
 #' @param barcode_gap_min_seqs Minimum number of sequences per species
-#'   required for barcode gap analysis.
+#'   required for barcode gap analysis (only used if `run_barcode_gap = TRUE`).
 #' @param barcode_gap_parallel Logical. If `TRUE`, runs barcode gap analysis
-#'   in parallel where supported.
+#'   in parallel where supported (only used if `run_barcode_gap = TRUE`).
 #' @param reference_table Name of the final reference table written to the
 #'   SQLite database. Default `"reference_final"`.
 #' @param qc_table Name of the QC table. Default `"qc_reference"`.
-#' @param barcode_gap_table Name of the barcode gap table. Default `"barcode_gap_metrics"`.
+#' @param barcode_gap_table Name of the barcode gap table. Default 
+#'   `"barcode_gap_metrics"` (only used if `run_barcode_gap = TRUE`).
 #' @param ambiguity_table Name of the ambiguity table. Default `"ambiguous_sequences"`.
 #' @param ambiguity_path Path to a CSV file containing ambiguity records.
 #'   If `ambiguity_data = NULL`, `archive_ambiguity = TRUE`, and this file
@@ -55,8 +60,9 @@
 #'   One of `"stop"`, `"warn"`, or `"ignore"`.
 #' @param require_taxonomy Logical. If `TRUE`, requires the final curated
 #'   table to contain full kingdom-to-species taxonomy.
-#' @param mafft Path to the `mafft` executable.
-#' @param fasttree Path to the `FastTree` executable.
+#' @param mafft Path to the `mafft` executable (only used if `run_divergence = TRUE`).
+#' @param fasttree Path to the `FastTree` executable (only used if 
+#'   `run_divergence = TRUE`).
 #'
 #' @return An invisible list containing:
 #' \describe{
@@ -75,10 +81,13 @@
 #'
 #' @examples
 #' \dontrun{
-#' curated <- rb_curate_reference(
+#' # Run with ML classification and barcode gap analysis
+#' curated_full <- rb_curate_reference(
 #'   data = standardized_data,
-#'   taxonomy_table = taxonomy_table,
-#'   db_path = tempfile(fileext = ".db")
+#'   taxonomy_table = tax_table,
+#'   run_classifier = TRUE,
+#'   run_barcode_gap = TRUE,
+#'   db_path = "curated_ref_full.sqlite")
 #' )
 #' }
 #'

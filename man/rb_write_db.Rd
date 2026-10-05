@@ -109,7 +109,7 @@ The default table names are:\tabular{ll}{
 }
 
 
-Before writing, \code{rb_prepare_reference_table()} ensures that the following
+Before writing, the function automatically ensures that the following
 columns exist (adding defaults where missing):
 \itemize{
 \item \code{qc_flag} (default \code{"pass"})

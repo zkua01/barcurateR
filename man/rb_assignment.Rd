@@ -65,7 +65,7 @@ rb_build_species_matrix(
 
 \item{min_identity}{Minimum percent identity for a confident assignment.}
 
-\item{min_coverage}{Minimum combined coverage (\code{ccovs}) for high-confidence assignment. Applied as a proportion (e.g., \code{0.9} for 90\%). Combined coverage is calculated as the geometric mean of query and subject coverage.}
+\item{min_coverage}{Minimum coverage threshold. In \code{rb_assign_blast()}, this is applied as a pre-filter on query coverage (\code{qcov}). In \code{rb_score_assignments()}, it is applied to combined coverage (\code{ccovs}) for high/low confidence assignment. Applied as a proportion (e.g., \code{0.9} for 90\%). Combined coverage is calculated as the geometric mean of query and subject coverage.}
 
 \item{tie_bitscore}{Tolerance for bitscore ties.}
 
@@ -127,7 +127,7 @@ database using either exact sequence matching or BLASTn alignment.
 \details{
 When \code{method = "blastn"}, BLAST+ must be installed and \code{blastn} and \code{makeblastdb} must be available on the system path.
 
-The assignment pipeline utilizes advanced alignment mettrics to prevent common BLAST biases. It calculates subject coverage (\code{scovs}), combined coverage (\code{ccovs} = sqrt(qcov * scovs)), and bitscore per base (\code{bitscore_pb}). Hits are ranked using a robust hierarchy: \code{-bitscore}, \code{-bitscore_pb}, \code{evalue}, \code{-ccovs}, \code{-pident}.
+The assignment pipeline utilizes advanced alignment metrics to prevent common BLAST biases. It calculates subject coverage (\code{scovs}), combined coverage (\code{ccovs} = sqrt(qcov * scovs)), and bitscore per base (\code{bitscore_pb}). Hits are ranked using a robust hierarchy: \code{-bitscore}, \code{-bitscore_pb}, \code{evalue}, \code{-ccovs}, \code{-pident}.
 
 The \code{assignment_status} column classifies the result:
 \itemize{
@@ -138,5 +138,21 @@ The \code{assignment_status} column classifies the result:
 }
 
 For ties, the \code{tie_taxa} column contains a pipe-separated (\code{|}) string of the tied species names (e.g., \code{"Species A|Species B"}). If there is no tie, this column is \code{NA}.
+}
+\examples{
+\dontrun{
+# Assign ASVs using exact matching (no BLAST+ required)
+assignment <- rb_assign_edna(
+  asv_fasta = "asvs.fasta",
+  db_path = "curated_ref.db",
+  marker = "12S",
+  method = "exact"
+)
+
+# Build a species-by-sample matrix
+asv_counts <- read.csv("asv_table.csv")
+species_matrix <- rb_build_species_matrix(assignment, asv_counts)
+}
+
 }
 \concept{taxonomic assignment}

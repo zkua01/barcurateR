@@ -69,7 +69,10 @@ known contaminants (e.g., human mtDNA, lab bacteria, NUMTs).
 \item \code{rb_build_contaminant_db()}: Downloads sequences from NCBI based on
 an organisms table, saving one FASTA file per category.
 \item \code{rb_build_blast_db()}: Combines FASTA files and builds a nucleotide
-BLAST database using \code{makeblastdb}.
+BLAST database using \code{makeblastdb}. Creates an intermediate combined
+FASTA file (e.g., \code{prefix_combined.fasta}) in the same directory as
+the \code{out_prefix}. This file is retained on disk after BLAST database
+is built.
 }
 }
 \details{
