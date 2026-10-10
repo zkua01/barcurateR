@@ -9,6 +9,7 @@
 ^r-lib$
 ^.*\.Rcheck$
 ^.*\.tar\.gz$
+^doc$
 ^Meta$
 ^_pkgdown\.yml$
 ^pkgdown$
