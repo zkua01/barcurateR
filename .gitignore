@@ -19,9 +19,7 @@ temp/
 test_dada2.fasta
 test_qiime2.fasta
 test_qiime2_taxonomy.tsv
-/doc/
 /Meta/
-docs
 data-raw/slovenian_fish/cache/
 data-raw/slovenian_fish/raw/
 data-raw/slovenian_fish/processed/
