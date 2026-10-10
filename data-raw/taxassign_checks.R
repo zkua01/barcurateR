@@ -16,12 +16,12 @@ library(dada2)
 db_path    <- "data-raw/slovenian_fish/processed/slovenian_fish_refdb.sqlite"
 asv_fasta  <- "data-raw/sava_river/processed/sava_asvs.fasta"
 counts_csv <- "data-raw/sava_river/processed/sava_abundance_table.csv"
-assign_csv <- "exports/sava_river_12s_assignments_two_pass.csv"  # RAW, pre-audit
+assign_csv <- "inst/extdata/sava_river_12s_assignments_two_pass.csv"  # RAW, pre-audit
 site_metadata <- "data-raw/sava_site_metadata.csv"
-spp_site_csv <- "exports/sava_river_community_matrix.csv"
+spp_site_csv <- "inst/extdata/sava_river_community_matrix.csv"
 audit_dir  <- "exports/evaluation"; dir.create(audit_dir, recursive = TRUE, showWarnings = FALSE)
 FWD <- "AAACTCGTGCCAGCCACC"; RCREV <- "CAAACTGGGATTAGATACCC"
-force_rebuild <- TRUE
+force_rebuild <- FALSE
 
 sava_asvs <- readDNAStringSet(asv_fasta); asv_char <- as.character(sava_asvs)
 sava_counts <- read_csv(counts_csv, show_col_types = FALSE)
@@ -262,13 +262,12 @@ ref_audit <- read_csv(file.path(audit_dir, "reference_coverage.csv"), show_col_t
 
 # 6. Define Overrides (Manual B/C factors)
 overrides <- tibble(
-  species = c("Chondrostoma soetta", "Chondrostoma nasus", 
+  species = c("Chondrostoma soetta", 
               "Ballerus ballerus", "Ballerus sapa", 
               "Phoxinus phoxinus", "Phoxinus lumaireul", 
               "Clarias gariepinus"),
-  factor  = c("B", "B", "B", "B", "B", "B", "C"),
+  factor  = c("B", "B", "B", "B", "B", "C"),
   note    = c("nasus/soetta complex; biogeography favours nasus",
-              "see soetta row",
               "B. ballerus/sapa: species-level swap within genus",
               "see ballerus row",
               "P. phoxinus/lumaireul: species-complex swap",
