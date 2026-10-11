@@ -32,7 +32,7 @@ This vignette walks through a realistic freshwater fish case study: curating a l
 
 ## Dataset
 
-For this example, we used the Slovenian fish species list presented by the Slovenian Native Fish Society `r Cite(myBib, 'drustvo_za_preucevanje_rib_slovenije_nase_2018')`, supplemented by "The Updated List of Non-Native Freshwater Fishes in Slovenia with Note of their Potential Impacts in Inland Waters" `r Cite(myBib, 'povz_updated_2018')`, for a total of 97 species. The sequences from NCBI (queried and retrieved on 2026-10-02) and BOLD (retrieved on 2026-09-16) were parsed and subsetted separately based on the compiled species list.
+For this example, we used the Slovenian fish species list presented by the Slovenian Native Fish Society based on the "Freshwater fish and lampreys in Slovenia" `r Cite(myBib, c('povz_freshwater_2015', 'drustvo_za_preucevanje_rib_slovenije_nase_2018'))`, supplemented by "The Updated List of Non-Native Freshwater Fishes in Slovenia with Note of their Potential Impacts in Inland Waters" `r Cite(myBib, 'povz_updated_2018')`, for a total of 97 species. The sequences from NCBI (queried and retrieved on 2026-10-02) and BOLD (retrieved on 2026-09-16) were parsed and subsetted separately based on the compiled species list.
 
 The reference database validation was conducted on fish eDNA dataset from the middle reach of the Sava River as reported from the study: "Temporal and Spatial Dynamics of the Lotic Fish Communities: A Comparison of Coffee Filter-Based Passive eDNA Collection Versus Active eDNA Filtering" `r Cite(myBib, 'mlinarec_temporal_2025')`. The validation eDNA ASV was reconstructed following the DADA2 workflow `r Cite(myBib, 'callahan_dada2_2016')` using parameters described by `r Cite(myBib, 'mlinarec_temporal_2025', textual=TRUE)`, where applicable.
 
@@ -395,6 +395,6 @@ This case study demonstrates how `barcurateR` streamlines the complex process of
 
 # References
 
-```{r eval=TRUE}
+```{r eval=TRUE, results='asis', echo=FALSE}
 PrintBibliography(myBib)
 ```
