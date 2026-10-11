@@ -25,3 +25,5 @@ test_qiime2_taxonomy.tsv
 data-raw/slovenian_fish/cache/
 data-raw/slovenian_fish/raw/
 data-raw/slovenian_fish/processed/
+data-raw/slovenian_fish/manifest/
+data-raw/sava_river/fastq/
