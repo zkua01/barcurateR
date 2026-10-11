@@ -1,0 +1,65 @@
+url: https://zkua01.github.io/barcurateR/
+
+template:
+  bootstrap: 5
+  bootswatch: flatly
+  includes:
+    in_header: |
+      <meta name="description" content="barcurateR: An R package for curating, auditing, and exporting DNA barcode reference databases for eDNA metabarcoding.">
+
+navbar:
+  structure:
+    left: [intro, reference, articles, news]
+    right: [search, github]
+
+articles:
+  - title: "Case Study"
+    desc: "A complete workflow curating a reference database for Slovenian freshwater fishes."
+    contents:
+    - barcurateR_sifish
+
+reference:
+  - title: "Database Curation & Standardization"
+    desc: "Functions for standardizing, merging, and quality-controlling reference sequences."
+    contents:
+    - starts_with("rb_parse")
+    - starts_with("rb_combine")
+    - starts_with("rb_resolve")
+    - starts_with("rb_curate")
+    - rb_sequence_prep
+    - rb_ambiguity_utils
+
+  - title: "Database I/O & Connection"
+    desc: "Connect to, read from, and write to the SQLite database."
+    contents:
+    - rb_connect
+    - rb_write_db
+    - rb_db_install
+    - rb_get_sequences
+    - starts_with("rb_export")
+
+  - title: "Auditing & Diagnostics"
+    desc: "Tools to inspect database health, marker coverage, and barcode gaps."
+    contents:
+    - starts_with("rb_qc")
+    - starts_with("rb_marker")
+    - starts_with("rb_list")
+    - starts_with("rb_barcode")
+    - rb_build_gene_tree
+
+  - title: "Taxonomic Assignment"
+    desc: "Assign eDNA ASVs to the curated database."
+    contents:
+    - starts_with("rb_assign")
+    - starts_with("rb_build_species")
+    - starts_with("rb_exact")
+    - starts_with("rb_score")
+    - starts_with("rb_read_fasta")
+    - starts_with("rb_parse_blast")
+
+  - title: "Utilities & Classification"
+    desc: "Helper functions for taxonomy, ML classification, and contaminants."
+    contents:
+    - rb_build_contaminant_db
+    - rb_classification
+    - rb_taxonomy_utils
