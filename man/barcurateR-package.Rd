@@ -32,7 +32,7 @@ Please see the vignettes for a detailed walkthrough of the curation and assignme
 Authors:
 \itemize{
   \item Zi Xun Kua \email{zixunkua@gmail.com}
-  \item Katja Pogacar
+  \item Katja Pogačar
   \item Guohuan Su
 }
 

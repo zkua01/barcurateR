@@ -3,7 +3,7 @@ Title: Standardize, Curate, Audit, and Deploy DNA Reference Databases
 Version: 0.2.0
 Authors@R: c(
     person("Zi Xun", "Kua", email = "zixunkua@gmail.com", role = c("aut", "cre")),
-    person("Katja", "Pogacar", role = "aut"),
+    person("Katja", "Pogačar", role = "aut"),
     person("Guohuan", "Su", role = "aut"))
 Description: Provides tools to standardize, curate, query, audit, and export 
     DNA reference databases, and assign amplicon sequence variants for 
