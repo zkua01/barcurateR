@@ -6,7 +6,7 @@
 
 You can install the development version of `barcurateR` from GitHub using the `remotes` or `pak` package:
 
-```{r}
+```r
 # install.packages("remotes")
 remotes::install_github("zkua01/barcurateR")
 ```
@@ -19,7 +19,7 @@ The package is built around a modular, 5-step workflow.
 
 Import raw sequence tables from various sources (e.g., NCBI, BOLD) and standardize them into a unified schema. If a description column is provided, barcurateR will automatically infer marker types (e.g., COI, 12S) and completeness.
 
-```{r}
+```r
 parsed_ncbi <- rb_parse_source_table(
   raw_data,
   source_name = "ncbi",
@@ -32,7 +32,7 @@ parsed_ncbi <- rb_parse_source_table(
 
 Merge standardized tables from multiple sources and identify sequences assigned to multiple species. Ambiguities must be resolved before Quality Control (QC) to ensure reliable downstream metrics.
 
-```{r}
+```r
 combined <- rb_combine_sources(list(ncbi_parsed, bold_parsed))
 combined <- rb_detect_ambiguity(combined)
 ```
@@ -41,7 +41,7 @@ combined <- rb_detect_ambiguity(combined)
 
 Execute the comprehensive QC wrapper. This step screens for contaminants and NUMTs, checks codon/rRNA integrity, optionally runs ML-based marker classification, joins taxonomic lineages, and writes the curated data to a SQLite database.
 
-```{r}
+```r
 curated <- rb_curate_reference(
   data = resolved,
   blast_db = "path/to/contaminant_db",
@@ -56,7 +56,7 @@ curated <- rb_curate_reference(
 
 Interact with your curated SQLite database to audit data quality, check marker coverage, and export sequences in formats compatible with popular metabarcoding pipelines (BLAST, DADA2, QIIME2, USEARCH).
 
-```{r}
+```r
 con <- rb_connect("curated_reference.sqlite")
 
 # Audit the database
@@ -74,7 +74,7 @@ rb_disconnect(con)
 
 Assign Amplicon Sequence Variants (ASVs) to your curated reference database using either dependency-free exact matching or BLASTn.
 
-```{r}
+```r
 assignmentt <- rb_assign_edna(
   asv_fasta = "asvs.fasta",
   db_path = "curated_reference.sqlite",
