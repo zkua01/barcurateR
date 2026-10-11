@@ -26,6 +26,15 @@ ecological metabarcoding in a reproducible manner.
 Please see the vignettes for a detailed walkthrough of the curation and assignment workflows (\code{browseVignettes("barcurateR")})
 }
 
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://zkua01.github.io/barcurateR/}
+  \item \url{https://github.com/zkua01/barcurateR}
+  \item Report bugs at \url{https://github.com/zkua01/barcurateR/issues}
+}
+
+}
 \author{
 \strong{Maintainer}: Zi Xun Kua \email{zixunkua@gmail.com}
 
