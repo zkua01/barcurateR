@@ -13,12 +13,13 @@
 Source:
 [`inst/CITATION`](https://github.com/zkua01/barcurateR/blob/main/inst/CITATION)
 
-Kua, Z. X., Su, G., and Xu, J. 2026. regionbarcoder: Audit, Deploy, and
-Export Regional DNA Reference Databases. R package version 0.1.0.
+Kua, Z. X., Pogačar K., and Su, G. 2026. From reference to database:
+Auditable and reproducible reference database curation workflow with
+barcurateR. R package version 0.2.0.
 
     @Manual{,
-      title = {regionbarcoder: Audit, Deploy, and Export Regional DNA Reference Databases},
-      author = {Zi Xun Kua and Guohuan Su and Jun Xu},
+      title = {From reference to database: Auditable and reproducible reference database curation workflow with barcurateR},
+      author = {Zi Xun Kua and Katja Pogačar and Guohuan Su},
       year = {2026},
-      note = {R package version 0.1.0},
+      note = {R package version 0.2.0},
     }
