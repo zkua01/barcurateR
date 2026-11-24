@@ -1,96 +1,100 @@
 asv_id,species,genus,family,pident,qcov,scovs,ccovs,evalue,bitscore,bitscore_pb,n_best_species,assignment_status,confidence,tie_taxa,db_source
-ASV_3,Squalius cephalus,Squalius,Cyprinidae,100,1,0.9314285714285714,0.9651054716602592,1.39e-84,302,1.852760736196319,1,unique,high,NA,12S_subset
-ASV_5,Alburnus alburnus,Alburnus,Cyprinidae,100,1,0.9314285714285714,0.9651054716602592,1.39e-84,302,1.852760736196319,1,unique,high,NA,12S_subset
-ASV_7,Barbus barbus,Barbus,Cyprinidae,100,1,0.9310344827586207,0.9649012813540153,4.98e-84,300,1.8518518518518519,1,unique,high,NA,12S_subset
-ASV_9,Vimba vimba,Vimba,Cyprinidae,100,1,0.9314285714285714,0.9651054716602592,1.39e-84,302,1.852760736196319,1,unique,high,NA,12S_subset
-ASV_12,Abramis brama,Abramis,Cyprinidae,100,1,0.9318181818181818,0.9653072991634227,3.9e-85,303,1.8475609756097562,1,unique,high,NA,12S_subset
-ASV_13,Chondrostoma soetta,Chondrostoma,Cyprinidae,99.383,0.9938650306748467,0.9257142857142857,0.9591845791960859,2.33e-82,294,1.8148148148148149,1,unique,high,NA,12S_subset
-ASV_18,Ballerus ballerus,Ballerus,Cyprinidae,99.387,1,0.9314285714285714,0.9651054716602592,6.49e-83,296,1.8159509202453987,1,unique,high,NA,12S_subset
-ASV_19,Leuciscus leuciscus,Leuciscus,Cyprinidae,99.387,1,0.9314285714285714,0.9651054716602592,6.49e-83,296,1.8159509202453987,1,unique,high,NA,12S_subset
-ASV_23,Ballerus ballerus,Ballerus,Cyprinidae,99.387,1,0.9314285714285714,0.9651054716602592,6.49e-83,296,1.8159509202453987,1,unique,high,NA,12S_subset
-ASV_24,Barbus barbus,Barbus,Cyprinidae,99.383,1,0.9310344827586207,0.9649012813540153,2.32e-82,294,1.8148148148148149,1,unique,high,NA,12S_subset
-ASV_29,Sabanejewia balcanica,Sabanejewia,Cobitidae,100,1,0.1694736842105263,0.41167181614791937,1.78e-83,298,1.8509316770186335,1,unique,low,NA,12S_subset
-ASV_36,Carassius auratus,Carassius,Cyprinidae,99.379,1,0.930635838150289,0.9646946864942758,8.28e-82,292,1.813664596273292,1,unique,high,NA,12S_subset
-ASV_43,Abramis brama,Abramis,Cyprinidae,99.39,1,0.9318181818181818,0.9653072991634227,1.82e-83,298,1.8170731707317074,1,unique,high,NA,12S_subset
-ASV_47,Carassius auratus,Carassius,Cyprinidae,100,1,0.16876310272536688,0.4108078659487509,1.78e-83,298,1.8509316770186335,1,unique,low,NA,12S_subset
-ASV_49,Oncorhynchus mykiss,Oncorhynchus,Salmonidae,99.367,1,0.9294117647058824,0.9640600420647474,3.77e-80,287,1.8164556962025316,1,unique,high,NA,12S_subset
-ASV_51,Abramis brama,Abramis,Cyprinidae,99.39,1,0.9318181818181818,0.9653072991634227,1.82e-83,298,1.8170731707317074,1,unique,high,NA,12S_subset
-ASV_59,Sander lucioperca,Sander,Percidae,100,1,0.16613756613756614,0.40759976219027183,2.89e-81,291,1.8535031847133758,1,unique,low,NA,12S_subset
-ASV_79,Alburnus alburnus,Alburnus,Cyprinidae,99.387,1,0.9314285714285714,0.9651054716602592,6.49e-83,296,1.8159509202453987,1,unique,high,NA,12S_subset
-ASV_80,Oncorhynchus mykiss,Oncorhynchus,Salmonidae,99.324,0.9308176100628931,0.6090534979423868,0.7529393875705918,4.95e-74,267,1.804054054054054,1,unique,low,NA,12S_subset
-ASV_84,Thymallus thymallus,Thymallus,Thymallidae,99.363,1,0.18234610917537747,0.42702003369324193,1.35e-79,285,1.8152866242038217,1,unique,low,NA,12S_subset
-ASV_86,Sabanejewia balcanica,Sabanejewia,Cobitidae,99.379,1,0.1694736842105263,0.41167181614791937,8.28e-82,292,1.813664596273292,1,unique,low,NA,12S_subset
-ASV_106,Cottus gobio,Cottus,Cottidae,99.363,1,0.20051085568326948,0.44778438526066255,1.35e-79,285,1.8152866242038217,1,unique,low,NA,12S_subset
-ASV_119,Pseudorasbora parva,Pseudorasbora,Cyprinidae,100,1,0.17277486910994763,0.4156619649546343,1.09e-85,305,1.8484848484848484,1,unique,low,NA,12S_subset
-ASV_120,Barbus barbus,Barbus,Cyprinidae,100,1,0.9310344827586207,0.9649012813540153,4.98e-84,300,1.8518518518518519,1,unique,high,NA,12S_subset
-ASV_126,Salmo trutta,Salmo,Salmonidae,99.367,1,0.16684266103484688,0.4084637817908056,3.77e-80,287,1.8164556962025316,1,unique,low,NA,12S_subset
-ASV_127,Squalius cephalus,Squalius,Cyprinidae,99.387,1,0.9314285714285714,0.9651054716602592,6.49e-83,296,1.8159509202453987,1,unique,high,NA,12S_subset
-ASV_132,Perca fluviatilis,Perca,Percidae,100,1,0.9294117647058824,0.9640600420647474,8.1e-82,292,1.8481012658227849,1,unique,high,NA,12S_subset
-ASV_141,Cottus gobio,Cottus,Cottidae,99.363,1,0.20051085568326948,0.44778438526066255,1.35e-79,285,1.8152866242038217,1,unique,low,NA,12S_subset
-ASV_148,Salmo trutta,Salmo,Salmonidae,100,1,0.16684266103484688,0.4084637817908056,8.1e-82,292,1.8481012658227849,1,unique,low,NA,12S_subset
-ASV_156,Salvelinus fontinalis,Salvelinus,Salmonidae,100,1,0.9294117647058824,0.9640600420647474,8.1e-82,292,1.8481012658227849,1,unique,high,NA,12S_subset
-ASV_161,Sabanejewia balcanica,Sabanejewia,Cobitidae,99.379,1,0.1694736842105263,0.41167181614791937,8.28e-82,292,1.813664596273292,1,unique,low,NA,12S_subset
-ASV_164,Phoxinus phoxinus,Phoxinus,Cyprinidae,100,1,0.9314285714285714,0.9651054716602592,1.39e-84,302,1.852760736196319,1,unique,high,NA,12S_subset
-ASV_171,Clarias gariepinus,Clarias,Clariidae,99.383,1,0.9310344827586207,0.9649012813540153,2.32e-82,294,1.8148148148148149,1,unique,high,NA,12S_subset
-ASV_176,Carassius auratus,Carassius,Cyprinidae,99.379,1,0.930635838150289,0.9646946864942758,8.28e-82,292,1.813664596273292,1,unique,high,NA,12S_subset
+ASV_2,Chondrostoma nasus,Chondrostoma,Cyprinidae,100,0.9938650306748467,0.9529411764705882,0.973188014509152,7.87e-84,300,1.8518518518518519,1,unique,high,NA,12S_subset
+ASV_3,Squalius cephalus,Squalius,Cyprinidae,100,1,0.9314285714285714,0.9651054716602592,2.19e-84,302,1.852760736196319,1,unique,high,NA,12S_subset
+ASV_5,Alburnus alburnus,Alburnus,Cyprinidae,100,1,0.9314285714285714,0.9651054716602592,2.19e-84,302,1.852760736196319,1,unique,high,NA,12S_subset
+ASV_7,Barbus barbus,Barbus,Cyprinidae,100,1,0.9310344827586207,0.9649012813540153,7.82e-84,300,1.8518518518518519,1,unique,high,NA,12S_subset
+ASV_9,Vimba vimba,Vimba,Cyprinidae,100,1,0.9314285714285714,0.9651054716602592,2.19e-84,302,1.852760736196319,1,unique,high,NA,12S_subset
+ASV_11,Alburnoides bipunctatus,Alburnoides,Cyprinidae,99.387,0.9939024390243902,0.9532163742690059,0.9733468442975253,1.03e-82,296,1.8159509202453987,1,unique,high,NA,12S_subset
+ASV_12,Abramis brama,Abramis,Cyprinidae,100,1,0.9318181818181818,0.9653072991634227,6.13e-85,303,1.8475609756097562,1,unique,high,NA,12S_subset
+ASV_13,Chondrostoma nasus,Chondrostoma,Cyprinidae,99.383,0.9938650306748467,0.9529411764705882,0.973188014509152,3.66e-82,294,1.8148148148148149,1,unique,high,NA,12S_subset
+ASV_15,Chondrostoma nasus,Chondrostoma,Cyprinidae,99.383,0.9938650306748467,0.9529411764705882,0.973188014509152,3.66e-82,294,1.8148148148148149,1,unique,high,NA,12S_subset
+ASV_18,Leuciscus aspius,Leuciscus,Cyprinidae,100,1,0.9314285714285714,0.9651054716602592,2.19e-84,302,1.852760736196319,1,unique,high,NA,12S_subset
+ASV_19,Leuciscus idus,Leuciscus,Cyprinidae,100,0.9938650306748467,0.9529411764705882,0.973188014509152,7.87e-84,300,1.8518518518518519,1,unique,high,NA,12S_subset
+ASV_23,Ballerus ballerus,Ballerus,Cyprinidae,99.387,1,0.9314285714285714,0.9651054716602592,1.02e-82,296,1.8159509202453987,1,unique,high,NA,12S_subset
+ASV_24,Barbus barbus,Barbus,Cyprinidae,99.383,1,0.9310344827586207,0.9649012813540153,3.64e-82,294,1.8148148148148149,1,unique,high,NA,12S_subset
+ASV_27,Neogobius melanostomus,Neogobius,Gobiidae,100,0.9873417721518988,0.7761194029850746,0.8753828343900498,1.65e-80,289,1.8525641025641026,1,unique,low,NA,12S_subset
+ASV_29,Sabanejewia balcanica,Sabanejewia,Cobitidae,100,1,0.1694736842105263,0.41167181614791937,2.79e-83,298,1.8509316770186335,1,unique,low,NA,12S_subset
+ASV_31,Chondrostoma nasus,Chondrostoma,Cyprinidae,99.383,0.9938650306748467,0.9529411764705882,0.973188014509152,3.66e-82,294,1.8148148148148149,1,unique,high,NA,12S_subset
+ASV_32,Chondrostoma nasus,Chondrostoma,Cyprinidae,99.383,0.9938650306748467,0.9529411764705882,0.973188014509152,3.66e-82,294,1.8148148148148149,1,unique,high,NA,12S_subset
+ASV_36,Cyprinus carpio,Cyprinus,Cyprinidae,100,0.9937888198757764,0.9523809523809523,0.9728646065814269,1e-82,296,1.85,1,unique,high,NA,12S_subset
+ASV_39,Cobitis elongatoides,Cobitis,Cobitidae,100,0.9937888198757764,0.9523809523809523,0.9728646065814269,1e-82,296,1.85,1,unique,high,NA,12S_subset
+ASV_43,Abramis brama,Abramis,Cyprinidae,99.39,1,0.9318181818181818,0.9653072991634227,2.85e-83,298,1.8170731707317074,1,unique,high,NA,12S_subset
+ASV_47,Carassius auratus,Carassius,Cyprinidae,100,1,0.16876310272536688,0.4108078659487509,2.79e-83,298,1.8509316770186335,1,unique,low,NA,12S_subset
+ASV_49,Oncorhynchus mykiss,Oncorhynchus,Salmonidae,100,1,0.16684266103484688,0.4084637817908056,1.27e-81,292,1.8481012658227849,1,unique,low,NA,12S_subset
+ASV_50,Leuciscus leuciscus,Leuciscus,Cyprinidae,100,0.9938650306748467,0.9529411764705882,0.973188014509152,7.87e-84,300,1.8518518518518519,1,unique,high,NA,12S_subset
+ASV_51,Abramis brama,Abramis,Cyprinidae,99.39,1,0.9318181818181818,0.9653072991634227,2.85e-83,298,1.8170731707317074,1,unique,high,NA,12S_subset
+ASV_54,Chondrostoma nasus,Chondrostoma,Cyprinidae,99.383,0.9938650306748467,0.9529411764705882,0.973188014509152,3.66e-82,294,1.8148148148148149,1,unique,high,NA,12S_subset
+ASV_59,Sander lucioperca,Sander,Percidae,100,1,0.16613756613756614,0.40759976219027183,4.54e-81,291,1.8535031847133758,1,unique,low,NA,12S_subset
+ASV_62,Chondrostoma nasus,Chondrostoma,Cyprinidae,99.383,0.9938650306748467,0.9529411764705882,0.973188014509152,3.66e-82,294,1.8148148148148149,1,unique,high,NA,12S_subset
+ASV_66,Chondrostoma nasus,Chondrostoma,Cyprinidae,99.383,0.9938650306748467,0.9529411764705882,0.973188014509152,3.66e-82,294,1.8148148148148149,1,unique,high,NA,12S_subset
+ASV_68,Leuciscus aspius,Leuciscus,Cyprinidae,99.387,1,0.9314285714285714,0.9651054716602592,1.02e-82,296,1.8159509202453987,1,unique,high,NA,12S_subset
+ASV_70,Leuciscus aspius,Leuciscus,Cyprinidae,99.387,1,0.9314285714285714,0.9651054716602592,1.02e-82,296,1.8159509202453987,1,unique,high,NA,12S_subset
+ASV_71,Chondrostoma nasus,Chondrostoma,Cyprinidae,99.383,0.9938650306748467,0.9529411764705882,0.973188014509152,3.66e-82,294,1.8148148148148149,1,unique,high,NA,12S_subset
+ASV_74,Chondrostoma nasus,Chondrostoma,Cyprinidae,99.383,0.9938650306748467,0.9529411764705882,0.973188014509152,3.66e-82,294,1.8148148148148149,1,unique,high,NA,12S_subset
+ASV_75,Chondrostoma nasus,Chondrostoma,Cyprinidae,99.383,0.9938650306748467,0.9529411764705882,0.973188014509152,3.66e-82,294,1.8148148148148149,1,unique,high,NA,12S_subset
+ASV_79,Alburnus alburnus,Alburnus,Cyprinidae,99.387,1,0.9314285714285714,0.9651054716602592,1.02e-82,296,1.8159509202453987,1,unique,high,NA,12S_subset
+ASV_80,Oncorhynchus mykiss,Oncorhynchus,Salmonidae,99.371,1,0.1678986272439282,0.40975434987798265,5.96e-80,287,1.8050314465408805,1,unique,low,NA,12S_subset
+ASV_84,Thymallus thymallus,Thymallus,Thymallidae,99.363,1,0.18234610917537747,0.42702003369324193,2.11e-79,285,1.8152866242038217,1,unique,low,NA,12S_subset
+ASV_86,Sabanejewia balcanica,Sabanejewia,Cobitidae,99.379,1,0.1694736842105263,0.41167181614791937,1.3e-81,292,1.813664596273292,1,unique,low,NA,12S_subset
+ASV_96,Telestes souffia,UNASSIGNED,UNASSIGNED,99.383,0.9938650306748467,0.9529411764705882,0.973188014509152,3.66e-82,294,1.8148148148148149,1,unique,high,NA,12S_subset
+ASV_102,Leuciscus aspius,Leuciscus,Cyprinidae,99.387,1,0.9314285714285714,0.9651054716602592,1.02e-82,296,1.8159509202453987,1,unique,high,NA,12S_subset
+ASV_106,Cottus gobio,Cottus,Cottidae,99.363,1,0.20051085568326948,0.44778438526066255,2.11e-79,285,1.8152866242038217,1,unique,low,NA,12S_subset
+ASV_113,Vimba vimba,Vimba,Cyprinidae,100,1,0.7276785714285714,0.8530407794640134,2.19e-84,302,1.852760736196319,1,unique,low,NA,12S_subset
+ASV_119,Pseudorasbora parva,Pseudorasbora,Cyprinidae,100,1,0.17277486910994763,0.4156619649546343,1.71e-85,305,1.8484848484848484,1,unique,low,NA,12S_subset
+ASV_120,Barbus barbus,Barbus,Cyprinidae,100,1,0.9310344827586207,0.9649012813540153,7.82e-84,300,1.8518518518518519,1,unique,high,NA,12S_subset
+ASV_126,Salmo trutta,Salmo,Salmonidae,99.367,1,0.16684266103484688,0.4084637817908056,5.92e-80,287,1.8164556962025316,1,unique,low,NA,12S_subset
+ASV_127,Squalius cephalus,Squalius,Cyprinidae,99.387,1,0.9314285714285714,0.9651054716602592,1.02e-82,296,1.8159509202453987,1,unique,high,NA,12S_subset
+ASV_132,Perca fluviatilis,Perca,Percidae,100,1,0.9294117647058824,0.9640600420647474,1.27e-81,292,1.8481012658227849,1,unique,high,NA,12S_subset
+ASV_133,Neogobius melanostomus,Neogobius,Gobiidae,99.359,0.9873417721518988,0.7761194029850746,0.8753828343900498,7.66e-79,283,1.814102564102564,1,unique,low,NA,12S_subset
+ASV_141,Cottus gobio,Cottus,Cottidae,99.363,1,0.20051085568326948,0.44778438526066255,2.11e-79,285,1.8152866242038217,1,unique,low,NA,12S_subset
+ASV_148,Salmo trutta,Salmo,Salmonidae,100,1,0.16684266103484688,0.4084637817908056,1.27e-81,292,1.8481012658227849,1,unique,low,NA,12S_subset
+ASV_156,Salvelinus fontinalis,Salvelinus,Salmonidae,100,1,0.9294117647058824,0.9640600420647474,1.27e-81,292,1.8481012658227849,1,unique,high,NA,12S_subset
+ASV_161,Sabanejewia balcanica,Sabanejewia,Cobitidae,99.379,1,0.1694736842105263,0.41167181614791937,1.3e-81,292,1.813664596273292,1,unique,low,NA,12S_subset
+ASV_164,Phoxinus phoxinus,Phoxinus,Cyprinidae,100,1,0.9314285714285714,0.9651054716602592,2.19e-84,302,1.852760736196319,1,unique,high,NA,12S_subset
+ASV_171,Clarias gariepinus,Clarias,Clariidae,99.383,1,0.9310344827586207,0.9649012813540153,3.64e-82,294,1.8148148148148149,1,unique,high,NA,12S_subset
+ASV_176,Carassius auratus,Carassius,Cyprinidae,99.379,1,0.930635838150289,0.9646946864942758,1.3e-81,292,1.813664596273292,1,unique,high,NA,12S_subset
 ASV_1,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
-ASV_2,Chondrostoma nasus,Chondrostoma,Cyprinidae,99.387,1,0.17103882476390347,0.4135684039719469,1.6e-80,296,1.8159509202453987,1,unique,low,NA,full_reference
 ASV_4,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
 ASV_6,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
 ASV_8,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
 ASV_10,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
-ASV_11,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
 ASV_14,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
-ASV_15,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
 ASV_16,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
 ASV_17,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
-ASV_20,Chondrostoma nasus,Chondrostoma,Cyprinidae,99.387,1,0.17103882476390347,0.4135684039719469,1.6e-80,296,1.8159509202453987,1,unique,low,NA,full_reference
+ASV_20,Chondrostoma nasus,Chondrostoma,Cyprinidae,99.387,1,0.17103882476390347,0.4135684039719469,9.41e-81,296,1.8159509202453987,1,unique,low,NA,full_reference
 ASV_21,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
 ASV_22,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
 ASV_25,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
-ASV_26,Silurus glanis,Silurus,Siluridae,100,1,0.009561849431130478,0.09778470959782248,2e-79,292,1.8481012658227849,1,unique,low,NA,full_reference
-ASV_27,Neogobius melanostomus,Neogobius,Gobiidae,100,1,0.008447842592097524,0.09191214605316059,2e-79,292,1.8481012658227849,1,unique,low,NA,full_reference
-ASV_28,Rhodeus amarus,Rhodeus,Cyprinidae,100,0.9815950920245399,0.009634491479496597,0.09724797967272178,1.6e-80,296,1.85,1,unique,low,NA,full_reference
+ASV_26,Silurus glanis,Silurus,Siluridae,100,1,0.009561849431130478,0.09778470959782248,1.17e-79,292,1.8481012658227849,1,unique,low,NA,full_reference
+ASV_28,Rhodeus amarus,Rhodeus,Cyprinidae,100,0.9815950920245399,0.009634491479496597,0.09724797967272178,9.41e-81,296,1.85,1,unique,low,NA,full_reference
 ASV_30,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
-ASV_31,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
-ASV_32,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
 ASV_33,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
 ASV_34,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
 ASV_35,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
 ASV_37,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
 ASV_38,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
-ASV_39,Cobitis elongatoides,Cobitis,Cobitidae,100,1,0.00973338975878121,0.09865794321179218,4.39e-81,298,1.8509316770186335,1,unique,low,NA,full_reference
 ASV_40,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
 ASV_41,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
 ASV_42,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
-ASV_44,Esox lucius,Esox,Esocidae,100,1,0.13186813186813187,0.36313651960128146,2.55e-78,289,1.8525641025641026,1,unique,low,NA,full_reference
+ASV_44,Esox lucius,Esox,Esocidae,100,1,0.13186813186813187,0.36313651960128146,1.5e-78,289,1.8525641025641026,1,unique,low,NA,full_reference
 ASV_45,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
 ASV_46,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
 ASV_48,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
-ASV_50,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
 ASV_52,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
-ASV_53,Gymnocephalus cernua,Gymnocephalus,Percidae,99.367,1,0.1363244176013805,0.3692213666642012,9.3e-78,287,1.8164556962025316,1,unique,low,NA,full_reference
-ASV_54,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
+ASV_53,Gymnocephalus cernua,Gymnocephalus,Percidae,99.367,1,0.1363244176013805,0.3692213666642012,5.46e-78,287,1.8164556962025316,1,unique,low,NA,full_reference
 ASV_55,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
 ASV_56,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
-ASV_57,Ctenopharyngodon idella,Ctenopharyngodon,Cyprinidae,100,1,0.009934971098265896,0.0996743251708578,2.7e-83,305,1.8484848484848484,1,unique,low,NA,full_reference
+ASV_57,Ctenopharyngodon idella,Ctenopharyngodon,Cyprinidae,100,1,0.009934971098265896,0.0996743251708578,1.59e-83,305,1.8484848484848484,1,unique,low,NA,full_reference
 ASV_58,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
 ASV_60,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
 ASV_61,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
-ASV_62,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
 ASV_63,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
-ASV_64,Rhodeus amarus,Rhodeus,Cyprinidae,99.375,0.9815950920245399,0.009634491479496597,0.09724797967272178,7.45e-79,291,1.81875,1,unique,low,NA,full_reference
-ASV_65,Chondrostoma nasus,Chondrostoma,Cyprinidae,99.387,1,0.17103882476390347,0.4135684039719469,1.6e-80,296,1.8159509202453987,1,unique,low,NA,full_reference
-ASV_66,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
+ASV_64,Rhodeus amarus,Rhodeus,Cyprinidae,99.375,0.9815950920245399,0.009634491479496597,0.09724797967272178,4.38e-79,291,1.81875,1,unique,low,NA,full_reference
+ASV_65,Chondrostoma nasus,Chondrostoma,Cyprinidae,99.387,1,0.17103882476390347,0.4135684039719469,9.41e-81,296,1.8159509202453987,1,unique,low,NA,full_reference
 ASV_67,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
-ASV_68,Leuciscus aspius,Leuciscus,Cyprinidae,99.387,1,0.9314285714285714,0.9651054716602592,1.6e-80,296,1.8159509202453987,1,unique,high,NA,full_reference
 ASV_69,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
-ASV_70,Leuciscus aspius,Leuciscus,Cyprinidae,99.387,1,0.9314285714285714,0.9651054716602592,1.6e-80,296,1.8159509202453987,1,unique,high,NA,full_reference
-ASV_71,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
 ASV_72,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
 ASV_73,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
-ASV_74,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
-ASV_75,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
 ASV_76,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
 ASV_77,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
 ASV_78,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
@@ -107,23 +111,20 @@ ASV_92,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
 ASV_93,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
 ASV_94,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
 ASV_95,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
-ASV_96,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
 ASV_97,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
 ASV_98,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
 ASV_99,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
 ASV_100,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
 ASV_101,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
-ASV_102,Leuciscus aspius,Leuciscus,Cyprinidae,99.387,1,0.9314285714285714,0.9651054716602592,1.6e-80,296,1.8159509202453987,1,unique,high,NA,full_reference
 ASV_103,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
 ASV_104,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
 ASV_105,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
-ASV_107,Chondrostoma nasus,Chondrostoma,Cyprinidae,99.387,1,0.17103882476390347,0.4135684039719469,1.6e-80,296,1.8159509202453987,1,unique,low,NA,full_reference
+ASV_107,Chondrostoma nasus,Chondrostoma,Cyprinidae,99.387,1,0.17103882476390347,0.4135684039719469,9.41e-81,296,1.8159509202453987,1,unique,low,NA,full_reference
 ASV_108,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
 ASV_109,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
 ASV_110,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
 ASV_111,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
 ASV_112,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
-ASV_113,Vimba vimba,Vimba,Cyprinidae,100,1,0.7276785714285714,0.8530407794640134,3.44e-82,302,1.852760736196319,1,unique,low,NA,full_reference
 ASV_114,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
 ASV_115,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
 ASV_116,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
@@ -138,13 +139,12 @@ ASV_128,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
 ASV_129,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
 ASV_130,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
 ASV_131,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
-ASV_133,Neogobius melanostomus,Neogobius,Gobiidae,99.367,1,0.008447842592097524,0.09191214605316059,9.3e-78,287,1.8164556962025316,1,unique,low,NA,full_reference
 ASV_134,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
 ASV_135,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
 ASV_136,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
 ASV_137,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
-ASV_138,Esox lucius,Esox,Esocidae,99.359,1,0.13186813186813187,0.36313651960128146,1.19e-76,283,1.814102564102564,1,unique,low,NA,full_reference
-ASV_139,Chondrostoma nasus,Chondrostoma,Cyprinidae,99.387,1,0.17103882476390347,0.4135684039719469,1.6e-80,296,1.8159509202453987,1,unique,low,NA,full_reference
+ASV_138,Esox lucius,Esox,Esocidae,99.359,1,0.13186813186813187,0.36313651960128146,6.96e-77,283,1.814102564102564,1,unique,low,NA,full_reference
+ASV_139,Chondrostoma nasus,Chondrostoma,Cyprinidae,99.387,1,0.17103882476390347,0.4135684039719469,9.41e-81,296,1.8159509202453987,1,unique,low,NA,full_reference
 ASV_140,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
 ASV_142,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
 ASV_143,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
@@ -186,7 +186,7 @@ ASV_184,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
 ASV_185,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
 ASV_186,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
 ASV_187,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
-ASV_188,Barbatula barbatula,Barbatula,Nemacheilidae,99.371,1,0.16772151898734178,0.40953817769207035,2.6e-78,289,1.8176100628930818,1,unique,low,NA,full_reference
+ASV_188,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
 ASV_189,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
 ASV_190,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
 ASV_191,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
@@ -199,7 +199,7 @@ ASV_197,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
 ASV_198,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
 ASV_199,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
 ASV_200,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
-ASV_201,Neogobius fluviatilis,Neogobius,Gobiidae,100,1,0.009207556136390639,0.0959560114656223,9.09e-78,287,1.8516129032258064,1,unique,low,NA,full_reference
+ASV_201,Neogobius fluviatilis,Neogobius,Gobiidae,100,1,0.009207556136390639,0.0959560114656223,5.39e-78,287,1.8516129032258064,1,unique,low,NA,full_reference
 ASV_202,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
 ASV_203,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference
 ASV_204,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,0,no_match,none,NA,full_reference

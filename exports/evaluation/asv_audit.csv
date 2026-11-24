@@ -1,0 +1,215 @@
+asv_id,total,n_samples,assignment_status,species,pident,db_source,rescue_via,len,motif_fwd,ov3,is_bimera,bp_join,artifact_class
+ASV_1,1127322,78,no_match,NA,NA,full_reference,NA,159,FALSE,NA,FALSE,FALSE,ok
+ASV_2,529699,78,unique,Chondrostoma nasus,100,12S_subset,NA,163,FALSE,1,FALSE,FALSE,ok
+ASV_3,205567,77,unique,Squalius cephalus,100,12S_subset,NA,163,FALSE,0,FALSE,FALSE,ok
+ASV_4,159580,78,no_match,NA,NA,full_reference,NA,159,FALSE,NA,FALSE,FALSE,ok
+ASV_5,154210,78,unique,Alburnus alburnus,100,12S_subset,NA,163,FALSE,0,FALSE,FALSE,ok
+ASV_6,143376,77,no_match,NA,NA,full_reference,NA,163,FALSE,0,FALSE,FALSE,ok
+ASV_7,116203,78,unique,Barbus barbus,100,12S_subset,NA,162,FALSE,0,FALSE,FALSE,ok
+ASV_8,99933,78,no_match,NA,NA,full_reference,NA,162,FALSE,0,FALSE,FALSE,ok
+ASV_9,97290,78,unique,Vimba vimba,100,12S_subset,NA,163,FALSE,0,FALSE,FALSE,ok
+ASV_10,95629,78,no_match,NA,NA,full_reference,NA,156,FALSE,NA,FALSE,FALSE,ok
+ASV_11,87270,76,unique,Alburnoides bipunctatus,99.387,12S_subset,NA,164,FALSE,0,FALSE,FALSE,ok
+ASV_12,72130,77,unique,Abramis brama,100,12S_subset,NA,164,FALSE,0,FALSE,FALSE,ok
+ASV_13,69199,73,unique,Chondrostoma nasus,99.383,12S_subset,NA,163,FALSE,1,FALSE,FALSE,ok
+ASV_14,60753,78,no_match,NA,NA,full_reference,NA,168,FALSE,NA,FALSE,FALSE,ok
+ASV_15,48276,63,unique,Chondrostoma nasus,99.383,12S_subset,NA,163,FALSE,0,FALSE,FALSE,ok
+ASV_16,46178,52,no_match,NA,NA,full_reference,NA,156,FALSE,NA,FALSE,FALSE,ok
+ASV_17,40718,41,no_match,NA,NA,full_reference,NA,159,FALSE,NA,FALSE,FALSE,ok
+ASV_18,26785,64,unique,Leuciscus aspius,100,12S_subset,NA,163,FALSE,0,FALSE,FALSE,ok
+ASV_19,26434,54,unique,Leuciscus idus,100,12S_subset,NA,163,FALSE,0,FALSE,FALSE,ok
+ASV_20,22426,41,unique,Chondrostoma nasus,99.387,full_reference,NA,163,FALSE,1,FALSE,FALSE,ok
+ASV_21,15521,51,no_match,NA,NA,full_reference,NA,175,FALSE,NA,FALSE,FALSE,ok
+ASV_22,14810,52,no_match,NA,NA,full_reference,NA,157,FALSE,NA,FALSE,FALSE,ok
+ASV_23,14528,40,unique,Ballerus ballerus,99.387,12S_subset,NA,163,FALSE,0,FALSE,FALSE,ok
+ASV_24,14088,22,unique,Barbus barbus,99.383,12S_subset,NA,162,FALSE,0,FALSE,FALSE,ok
+ASV_25,14067,56,no_match,NA,NA,full_reference,NA,159,FALSE,NA,FALSE,FALSE,ok
+ASV_26,11645,77,unique,Silurus glanis,100,full_reference,NA,158,FALSE,21,FALSE,FALSE,coverage_gap_rescued
+ASV_27,11428,59,unique,Neogobius melanostomus,100,12S_subset,NA,158,FALSE,0,FALSE,FALSE,ok
+ASV_28,10483,78,unique,Rhodeus amarus,100,full_reference,NA,163,FALSE,NA,FALSE,FALSE,ok
+ASV_29,9934,52,unique,Sabanejewia balcanica,100,12S_subset,NA,161,FALSE,0,FALSE,FALSE,ok
+ASV_30,9619,64,no_match,NA,NA,full_reference,NA,157,FALSE,NA,FALSE,FALSE,ok
+ASV_31,8508,32,unique,Chondrostoma nasus,99.383,12S_subset,NA,163,FALSE,1,FALSE,FALSE,ok
+ASV_32,8432,35,unique,Chondrostoma nasus,99.383,12S_subset,NA,163,FALSE,1,FALSE,FALSE,ok
+ASV_33,7944,32,no_match,NA,NA,full_reference,NA,157,FALSE,NA,FALSE,FALSE,ok
+ASV_34,7905,52,no_match,NA,NA,full_reference,NA,159,FALSE,NA,FALSE,FALSE,ok
+ASV_35,7742,24,no_match,NA,NA,full_reference,NA,158,FALSE,NA,FALSE,FALSE,ok
+ASV_36,7207,74,unique,Cyprinus carpio,100,12S_subset,NA,161,FALSE,0,FALSE,FALSE,ok
+ASV_37,7008,39,no_match,NA,NA,full_reference,NA,163,FALSE,0,FALSE,FALSE,ok
+ASV_38,6633,60,no_match,NA,NA,full_reference,NA,158,FALSE,NA,FALSE,FALSE,ok
+ASV_39,6534,52,unique,Cobitis elongatoides,100,12S_subset,NA,161,FALSE,NA,FALSE,FALSE,ok
+ASV_40,6491,17,no_match,NA,NA,full_reference,NA,158,FALSE,NA,FALSE,FALSE,ok
+ASV_41,5180,61,no_match,NA,NA,full_reference,NA,157,FALSE,0,FALSE,FALSE,ok
+ASV_42,5082,13,no_match,NA,NA,full_reference,NA,159,FALSE,NA,FALSE,FALSE,ok
+ASV_43,4211,26,unique,Abramis brama,99.39,12S_subset,NA,164,FALSE,0,FALSE,FALSE,ok
+ASV_44,4045,50,unique,Esox lucius,100,full_reference,NA,156,FALSE,0,FALSE,FALSE,ok
+ASV_45,3592,67,no_match,NA,NA,full_reference,NA,165,FALSE,0,FALSE,FALSE,ok
+ASV_46,3351,11,no_match,NA,NA,full_reference,NA,159,FALSE,NA,FALSE,FALSE,ok
+ASV_47,3074,55,unique,Carassius auratus,100,12S_subset,NA,161,FALSE,0,FALSE,FALSE,ok
+ASV_48,2980,34,no_match,NA,NA,full_reference,NA,161,FALSE,NA,FALSE,FALSE,ok
+ASV_49,2632,39,unique,Oncorhynchus mykiss,100,12S_subset,NA,158,FALSE,0,FALSE,FALSE,ok
+ASV_50,2625,46,unique,Leuciscus leuciscus,100,12S_subset,NA,163,FALSE,0,FALSE,FALSE,ok
+ASV_51,2582,16,unique,Abramis brama,99.39,12S_subset,NA,164,FALSE,0,TRUE,FALSE,bimera_flag_unconfirmed
+ASV_52,2544,9,no_match,NA,NA,full_reference,NA,159,FALSE,NA,FALSE,FALSE,ok
+ASV_53,2396,53,unique,Gymnocephalus cernua,99.367,full_reference,NA,158,FALSE,0,FALSE,FALSE,ok
+ASV_54,2328,10,unique,Chondrostoma nasus,99.383,12S_subset,NA,163,FALSE,1,FALSE,FALSE,ok
+ASV_55,2149,4,no_match,NA,NA,full_reference,NA,155,FALSE,NA,FALSE,FALSE,ok
+ASV_56,1856,10,no_match,NA,NA,full_reference,NA,163,FALSE,1,FALSE,FALSE,ok
+ASV_57,1741,38,unique,Ctenopharyngodon idella,100,full_reference,NA,165,FALSE,0,FALSE,FALSE,ok
+ASV_58,1734,28,no_match,NA,NA,full_reference,NA,164,FALSE,0,FALSE,FALSE,ok
+ASV_59,1655,22,unique,Sander lucioperca,100,12S_subset,NA,157,FALSE,0,FALSE,FALSE,ok
+ASV_60,1606,42,no_match,NA,NA,full_reference,NA,158,FALSE,NA,FALSE,FALSE,ok
+ASV_61,1468,32,no_match,NA,NA,full_reference,NA,158,FALSE,NA,FALSE,FALSE,ok
+ASV_62,1440,9,unique,Chondrostoma nasus,99.383,12S_subset,NA,163,FALSE,1,TRUE,FALSE,bimera_flag_unconfirmed
+ASV_63,1437,24,no_match,NA,NA,full_reference,NA,156,FALSE,NA,FALSE,FALSE,ok
+ASV_64,1289,7,unique,Rhodeus amarus,99.375,full_reference,NA,163,FALSE,NA,FALSE,FALSE,ok
+ASV_65,1283,9,unique,Chondrostoma nasus,99.387,full_reference,NA,163,FALSE,1,FALSE,FALSE,ok
+ASV_66,1256,5,unique,Chondrostoma nasus,99.383,12S_subset,NA,163,FALSE,1,FALSE,FALSE,ok
+ASV_67,1197,31,no_match,NA,NA,full_reference,NA,156,FALSE,NA,FALSE,FALSE,ok
+ASV_68,1182,7,unique,Leuciscus aspius,99.387,12S_subset,NA,163,FALSE,0,FALSE,FALSE,ok
+ASV_69,1149,4,no_match,NA,NA,full_reference,NA,159,FALSE,NA,FALSE,FALSE,ok
+ASV_70,1147,9,unique,Leuciscus aspius,99.387,12S_subset,NA,163,FALSE,0,FALSE,FALSE,ok
+ASV_71,1099,4,unique,Chondrostoma nasus,99.383,12S_subset,NA,163,FALSE,1,TRUE,FALSE,bimera_flag_unconfirmed
+ASV_72,1061,46,no_match,NA,NA,full_reference,NA,161,FALSE,NA,FALSE,FALSE,ok
+ASV_73,1060,6,no_match,NA,NA,full_reference,NA,161,FALSE,NA,FALSE,FALSE,ok
+ASV_74,982,4,unique,Chondrostoma nasus,99.383,12S_subset,NA,163,FALSE,1,FALSE,FALSE,ok
+ASV_75,923,5,unique,Chondrostoma nasus,99.383,12S_subset,NA,163,FALSE,1,TRUE,FALSE,bimera_flag_unconfirmed
+ASV_76,864,16,no_match,NA,NA,full_reference,NA,157,FALSE,NA,FALSE,FALSE,ok
+ASV_77,858,34,no_match,NA,NA,full_reference,NA,165,FALSE,0,FALSE,FALSE,ok
+ASV_78,847,3,no_match,NA,NA,full_reference,NA,159,FALSE,NA,FALSE,FALSE,ok
+ASV_79,747,3,unique,Alburnus alburnus,99.387,12S_subset,NA,163,FALSE,0,TRUE,FALSE,bimera_flag_unconfirmed
+ASV_80,680,7,unique,Oncorhynchus mykiss,99.371,12S_subset,NA,159,FALSE,0,FALSE,FALSE,ok
+ASV_81,649,7,no_match,NA,NA,full_reference,NA,157,FALSE,NA,FALSE,FALSE,ok
+ASV_82,639,8,no_match,NA,NA,full_reference,NA,158,FALSE,0,FALSE,FALSE,ok
+ASV_83,627,5,no_match,NA,NA,full_reference,NA,157,FALSE,NA,FALSE,FALSE,ok
+ASV_84,615,10,unique,Thymallus thymallus,99.363,12S_subset,NA,157,FALSE,0,FALSE,FALSE,ok
+ASV_85,608,32,no_match,NA,NA,full_reference,NA,150,FALSE,NA,FALSE,FALSE,ok
+ASV_86,551,3,unique,Sabanejewia balcanica,99.379,12S_subset,NA,161,FALSE,0,FALSE,FALSE,ok
+ASV_87,534,7,no_match,NA,NA,full_reference,NA,158,FALSE,NA,FALSE,FALSE,ok
+ASV_88,526,2,no_match,NA,NA,full_reference,NA,156,FALSE,NA,FALSE,FALSE,ok
+ASV_89,514,6,no_match,NA,NA,full_reference,NA,161,FALSE,NA,FALSE,FALSE,ok
+ASV_90,493,19,no_match,NA,NA,full_reference,NA,152,FALSE,NA,FALSE,FALSE,ok
+ASV_91,492,6,no_match,NA,NA,full_reference,NA,163,FALSE,1,FALSE,FALSE,ok
+ASV_92,484,29,no_match,NA,NA,full_reference,NA,169,FALSE,NA,FALSE,FALSE,ok
+ASV_93,446,6,no_match,NA,NA,full_reference,NA,169,FALSE,NA,FALSE,FALSE,ok
+ASV_94,436,16,no_match,NA,NA,full_reference,NA,167,FALSE,NA,FALSE,FALSE,ok
+ASV_95,434,2,no_match,NA,NA,full_reference,NA,159,FALSE,NA,FALSE,FALSE,ok
+ASV_96,422,3,unique,Telestes souffia,99.383,12S_subset,NA,163,FALSE,1,FALSE,FALSE,ok
+ASV_97,419,21,no_match,NA,NA,full_reference,NA,156,FALSE,NA,FALSE,FALSE,ok
+ASV_98,418,7,no_match,NA,NA,full_reference,NA,167,FALSE,NA,FALSE,FALSE,ok
+ASV_99,404,18,no_match,NA,NA,full_reference,NA,155,FALSE,NA,FALSE,FALSE,ok
+ASV_100,394,8,no_match,NA,NA,full_reference,NA,156,FALSE,NA,FALSE,FALSE,ok
+ASV_101,393,2,no_match,NA,NA,full_reference,NA,159,FALSE,NA,FALSE,FALSE,ok
+ASV_102,387,4,unique,Leuciscus aspius,99.387,12S_subset,NA,163,FALSE,0,FALSE,FALSE,ok
+ASV_103,386,7,no_match,NA,NA,full_reference,NA,169,FALSE,NA,FALSE,FALSE,ok
+ASV_104,373,33,no_match,NA,NA,full_reference,NA,154,FALSE,NA,FALSE,FALSE,ok
+ASV_105,365,28,no_match,NA,NA,full_reference,NA,154,FALSE,NA,FALSE,FALSE,ok
+ASV_106,358,5,unique,Cottus gobio,99.363,12S_subset,NA,157,FALSE,0,FALSE,FALSE,ok
+ASV_107,352,3,unique,Chondrostoma nasus,99.387,full_reference,NA,163,FALSE,1,FALSE,FALSE,ok
+ASV_108,349,10,no_match,NA,NA,full_reference,NA,160,FALSE,56,FALSE,FALSE,non12S_tail
+ASV_109,344,2,no_match,NA,NA,full_reference,NA,159,FALSE,NA,FALSE,FALSE,ok
+ASV_110,329,22,no_match,NA,NA,full_reference,NA,155,FALSE,NA,FALSE,FALSE,ok
+ASV_111,323,14,no_match,NA,NA,full_reference,NA,160,FALSE,NA,FALSE,FALSE,ok
+ASV_112,317,2,no_match,NA,NA,full_reference,NA,159,FALSE,NA,FALSE,FALSE,ok
+ASV_113,307,7,unique,Vimba vimba,100,12S_subset,NA,163,FALSE,0,FALSE,FALSE,ok
+ASV_114,305,25,no_match,NA,NA,full_reference,NA,160,FALSE,NA,FALSE,FALSE,ok
+ASV_115,304,10,no_match,NA,NA,full_reference,NA,156,FALSE,NA,FALSE,FALSE,ok
+ASV_116,303,2,no_match,NA,NA,full_reference,NA,159,FALSE,NA,FALSE,FALSE,ok
+ASV_117,289,8,no_match,NA,NA,full_reference,NA,156,FALSE,NA,TRUE,FALSE,bimera_flag_unconfirmed
+ASV_118,283,5,no_match,NA,NA,full_reference,NA,170,FALSE,NA,FALSE,FALSE,ok
+ASV_119,276,23,unique,Pseudorasbora parva,100,12S_subset,NA,165,FALSE,0,FALSE,FALSE,ok
+ASV_120,271,3,unique,Barbus barbus,100,12S_subset,NA,162,FALSE,0,FALSE,FALSE,ok
+ASV_121,269,2,no_match,NA,NA,full_reference,NA,164,FALSE,0,FALSE,FALSE,ok
+ASV_122,265,2,no_match,NA,NA,full_reference,NA,156,FALSE,NA,FALSE,FALSE,ok
+ASV_123,250,23,no_match,NA,NA,full_reference,NA,158,FALSE,0,FALSE,FALSE,ok
+ASV_124,250,4,no_match,NA,NA,full_reference,NA,170,FALSE,NA,FALSE,FALSE,ok
+ASV_125,238,5,no_match,NA,NA,full_reference,NA,159,FALSE,NA,FALSE,FALSE,ok
+ASV_126,238,4,unique,Salmo trutta,99.367,12S_subset,NA,158,FALSE,0,FALSE,FALSE,ok
+ASV_127,217,2,unique,Squalius cephalus,99.387,12S_subset,NA,163,FALSE,0,FALSE,FALSE,ok
+ASV_128,215,14,no_match,NA,NA,full_reference,NA,165,FALSE,0,FALSE,FALSE,ok
+ASV_129,208,20,no_match,NA,NA,full_reference,NA,159,FALSE,0,FALSE,FALSE,ok
+ASV_130,206,15,no_match,NA,NA,full_reference,NA,154,FALSE,NA,FALSE,FALSE,ok
+ASV_131,198,23,no_match,NA,NA,full_reference,NA,155,FALSE,NA,FALSE,FALSE,ok
+ASV_132,196,8,unique,Perca fluviatilis,100,12S_subset,NA,158,FALSE,0,FALSE,FALSE,ok
+ASV_133,193,2,unique,Neogobius melanostomus,99.359,12S_subset,NA,158,FALSE,0,FALSE,FALSE,ok
+ASV_134,192,19,no_match,NA,NA,full_reference,NA,155,FALSE,NA,FALSE,FALSE,ok
+ASV_135,186,5,no_match,NA,NA,full_reference,NA,158,FALSE,NA,FALSE,FALSE,ok
+ASV_136,176,18,no_match,NA,NA,full_reference,NA,163,FALSE,NA,FALSE,FALSE,ok
+ASV_137,171,18,no_match,NA,NA,full_reference,NA,154,FALSE,NA,FALSE,FALSE,ok
+ASV_138,171,4,unique,Esox lucius,99.359,full_reference,NA,156,FALSE,84,TRUE,FALSE,coverage_gap_rescued
+ASV_139,167,2,unique,Chondrostoma nasus,99.387,full_reference,NA,163,FALSE,1,FALSE,FALSE,ok
+ASV_140,163,7,no_match,NA,NA,full_reference,NA,156,FALSE,NA,FALSE,FALSE,ok
+ASV_141,160,4,unique,Cottus gobio,99.363,12S_subset,NA,157,FALSE,0,FALSE,FALSE,ok
+ASV_142,152,2,no_match,NA,NA,full_reference,NA,163,FALSE,0,TRUE,TRUE,chimera_confirmed
+ASV_143,142,2,no_match,NA,NA,full_reference,NA,156,FALSE,NA,FALSE,FALSE,ok
+ASV_144,138,2,no_match,NA,NA,full_reference,NA,164,FALSE,0,FALSE,FALSE,ok
+ASV_145,126,2,no_match,NA,NA,full_reference,NA,159,FALSE,NA,FALSE,FALSE,ok
+ASV_146,123,12,no_match,NA,NA,full_reference,NA,155,FALSE,NA,FALSE,FALSE,ok
+ASV_147,119,2,no_match,NA,NA,full_reference,NA,159,FALSE,NA,FALSE,FALSE,ok
+ASV_148,117,3,unique,Salmo trutta,100,12S_subset,NA,158,FALSE,0,FALSE,FALSE,ok
+ASV_149,114,3,no_match,NA,NA,full_reference,NA,189,FALSE,NA,FALSE,FALSE,ok
+ASV_150,109,2,no_match,NA,NA,full_reference,NA,159,FALSE,NA,FALSE,FALSE,ok
+ASV_151,108,2,no_match,NA,NA,full_reference,NA,158,FALSE,NA,FALSE,FALSE,ok
+ASV_152,107,9,no_match,NA,NA,full_reference,NA,180,FALSE,NA,FALSE,FALSE,ok
+ASV_153,104,4,no_match,NA,NA,full_reference,NA,161,FALSE,0,TRUE,TRUE,chimera_confirmed
+ASV_154,99,5,no_match,NA,NA,full_reference,NA,161,FALSE,NA,FALSE,FALSE,ok
+ASV_155,96,4,no_match,NA,NA,full_reference,NA,156,FALSE,NA,FALSE,FALSE,ok
+ASV_156,96,8,unique,Salvelinus fontinalis,100,12S_subset,NA,158,FALSE,0,FALSE,FALSE,ok
+ASV_157,95,2,no_match,NA,NA,full_reference,NA,157,FALSE,NA,FALSE,FALSE,ok
+ASV_158,94,10,no_match,NA,NA,full_reference,NA,155,FALSE,NA,FALSE,FALSE,ok
+ASV_159,91,4,no_match,NA,NA,full_reference,NA,156,FALSE,NA,FALSE,FALSE,ok
+ASV_160,90,4,no_match,NA,NA,full_reference,NA,156,FALSE,NA,FALSE,FALSE,ok
+ASV_161,90,2,unique,Sabanejewia balcanica,99.379,12S_subset,NA,161,FALSE,0,FALSE,FALSE,ok
+ASV_162,88,2,no_match,NA,NA,full_reference,NA,175,FALSE,NA,FALSE,FALSE,ok
+ASV_163,77,15,no_match,NA,NA,full_reference,NA,159,FALSE,NA,FALSE,FALSE,ok
+ASV_164,76,5,unique,Phoxinus phoxinus,100,12S_subset,NA,163,FALSE,0,FALSE,FALSE,ok
+ASV_165,74,2,no_match,NA,NA,full_reference,NA,174,TRUE,NA,FALSE,FALSE,primer_artifact
+ASV_166,71,10,no_match,NA,NA,full_reference,NA,155,FALSE,NA,FALSE,FALSE,ok
+ASV_167,70,3,no_match,NA,NA,full_reference,NA,177,FALSE,NA,FALSE,FALSE,ok
+ASV_168,69,9,no_match,NA,NA,full_reference,NA,158,FALSE,NA,FALSE,FALSE,ok
+ASV_169,69,5,no_match,NA,NA,full_reference,NA,156,FALSE,NA,FALSE,FALSE,ok
+ASV_170,64,2,no_match,NA,NA,full_reference,NA,158,FALSE,0,TRUE,FALSE,bimera_flag_unconfirmed
+ASV_171,64,11,unique,Clarias gariepinus,99.383,12S_subset,NA,162,FALSE,0,FALSE,FALSE,ok
+ASV_172,61,13,no_match,NA,NA,full_reference,NA,155,FALSE,NA,FALSE,FALSE,ok
+ASV_173,59,10,no_match,NA,NA,full_reference,NA,160,FALSE,NA,FALSE,FALSE,ok
+ASV_174,57,2,no_match,NA,NA,full_reference,NA,156,FALSE,NA,FALSE,FALSE,ok
+ASV_175,54,4,no_match,NA,NA,full_reference,NA,189,FALSE,NA,FALSE,FALSE,ok
+ASV_176,44,2,unique,Carassius auratus,99.379,12S_subset,NA,161,FALSE,0,FALSE,FALSE,ok
+ASV_177,40,2,no_match,NA,NA,full_reference,NA,155,FALSE,NA,TRUE,FALSE,bimera_flag_unconfirmed
+ASV_178,39,5,no_match,NA,NA,full_reference,NA,158,FALSE,NA,TRUE,FALSE,bimera_flag_unconfirmed
+ASV_179,39,2,no_match,NA,NA,full_reference,NA,154,FALSE,NA,FALSE,FALSE,ok
+ASV_180,35,7,no_match,NA,NA,full_reference,NA,170,FALSE,NA,FALSE,FALSE,ok
+ASV_181,33,3,no_match,NA,NA,full_reference,NA,156,FALSE,NA,FALSE,FALSE,ok
+ASV_182,33,3,no_match,NA,NA,full_reference,NA,153,FALSE,NA,FALSE,FALSE,ok
+ASV_183,32,3,no_match,NA,NA,full_reference,NA,156,FALSE,NA,FALSE,FALSE,ok
+ASV_184,32,2,no_match,NA,NA,full_reference,NA,182,FALSE,NA,FALSE,FALSE,ok
+ASV_185,30,3,no_match,NA,NA,full_reference,NA,158,FALSE,NA,FALSE,FALSE,ok
+ASV_186,30,9,no_match,NA,NA,full_reference,NA,159,FALSE,NA,FALSE,FALSE,ok
+ASV_187,29,3,no_match,NA,NA,full_reference,NA,157,FALSE,NA,TRUE,FALSE,bimera_flag_unconfirmed
+ASV_188,29,3,no_match,NA,NA,full_reference,NA,159,FALSE,0,FALSE,FALSE,ok
+ASV_189,28,2,no_match,NA,NA,full_reference,NA,168,FALSE,NA,FALSE,FALSE,ok
+ASV_190,28,2,no_match,NA,NA,full_reference,NA,189,FALSE,NA,FALSE,FALSE,ok
+ASV_191,27,4,no_match,NA,NA,full_reference,NA,156,FALSE,NA,FALSE,FALSE,ok
+ASV_192,26,8,no_match,NA,NA,full_reference,NA,155,FALSE,NA,FALSE,FALSE,ok
+ASV_193,26,2,no_match,NA,NA,full_reference,NA,170,FALSE,NA,FALSE,FALSE,ok
+ASV_194,25,2,no_match,NA,NA,full_reference,NA,185,TRUE,NA,FALSE,FALSE,primer_artifact
+ASV_195,25,4,no_match,NA,NA,full_reference,NA,169,FALSE,0,FALSE,FALSE,ok
+ASV_196,23,3,no_match,NA,NA,full_reference,NA,156,FALSE,NA,FALSE,FALSE,ok
+ASV_197,22,4,no_match,NA,NA,full_reference,NA,189,FALSE,NA,FALSE,FALSE,ok
+ASV_198,22,3,no_match,NA,NA,full_reference,NA,183,FALSE,NA,FALSE,FALSE,ok
+ASV_199,22,2,no_match,NA,NA,full_reference,NA,169,FALSE,NA,FALSE,FALSE,ok
+ASV_200,20,4,no_match,NA,NA,full_reference,NA,169,FALSE,NA,FALSE,FALSE,ok
+ASV_201,19,2,unique,Neogobius fluviatilis,100,full_reference,NA,155,FALSE,0,FALSE,FALSE,ok
+ASV_202,18,2,no_match,NA,NA,full_reference,NA,161,FALSE,NA,FALSE,FALSE,ok
+ASV_203,17,2,no_match,NA,NA,full_reference,NA,157,FALSE,NA,FALSE,FALSE,ok
+ASV_204,17,2,no_match,NA,NA,full_reference,NA,189,FALSE,NA,FALSE,FALSE,ok
+ASV_205,16,4,no_match,NA,NA,full_reference,NA,164,FALSE,NA,FALSE,FALSE,ok
+ASV_206,15,2,no_match,NA,NA,full_reference,NA,153,FALSE,NA,FALSE,FALSE,ok
+ASV_207,15,2,no_match,NA,NA,full_reference,NA,181,FALSE,NA,FALSE,FALSE,ok
+ASV_208,14,2,no_match,NA,NA,full_reference,NA,165,FALSE,NA,FALSE,FALSE,ok
+ASV_209,14,2,no_match,NA,NA,full_reference,NA,152,FALSE,NA,FALSE,FALSE,ok
+ASV_210,13,3,no_match,NA,NA,full_reference,NA,170,FALSE,NA,FALSE,FALSE,ok
+ASV_211,12,3,no_match,NA,NA,full_reference,NA,161,FALSE,NA,FALSE,FALSE,ok
+ASV_212,12,3,no_match,NA,NA,full_reference,NA,169,FALSE,NA,FALSE,FALSE,ok
+ASV_213,11,3,no_match,NA,NA,full_reference,NA,156,FALSE,NA,FALSE,FALSE,ok
+ASV_214,11,2,no_match,NA,NA,full_reference,NA,158,FALSE,0,TRUE,FALSE,bimera_flag_unconfirmed

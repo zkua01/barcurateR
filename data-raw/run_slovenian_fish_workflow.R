@@ -29,12 +29,13 @@ ncbi_raw <- read_csv("data-raw/slovenian_fish/raw/ncbi_sequence_raw.csv", show_c
   filter(!is.na(sequence))
 bold_raw <- read_csv("data-raw/slovenian_fish/raw/bold_sequence_raw.csv", show_col_types = FALSE) |>
   filter(!is.na(sequence))
+local_raw <- read_csv("data-raw/slovenian_fish/raw/ribe_sava_mlinarec_20261103.csv", show_col_types = FALSE) |>
+  filter(!is.na(sequence))
 
 # Load the curated taxonomy table for the 99 Slovenian fish species
 taxonomy_table <- read_csv("data-raw/slovenian_fish/processed/slovenian_fish_taxonomy.csv", show_col_types = FALSE)
 
-message(sprintf("Loaded %d NCBI records and %d BOLD records.", nrow(ncbi_raw), nrow(bold_raw)))
-
+message(sprintf("Loaded %d NCBI records, %d BOLD, %d supplemental records.", nrow(ncbi_raw), nrow(bold_raw), nrow(local_raw)))
 
 # ----------------------------------------------------------
 # STAGE 1: Source Standardization
@@ -61,7 +62,7 @@ ncbi_parsed <- rb_parse_source_table(
 # 1B. BOLD Standardization
 # BOLD uses "COI-5P". We pass the seq_type column to description_col 
 # so rb_simplify_seq_type() converts it to standard "COI".
-bold_raw$description <- bold_raw$seq_type 
+bold_raw$description <- bold_raw$seq_type
 
 bold_parsed <- rb_parse_source_table(
   raw = bold_raw,
@@ -74,7 +75,26 @@ bold_parsed <- rb_parse_source_table(
   description_col = "description"
 )
 
-message(sprintf("Standardized: %d NCBI seqs, %d BOLD seqs.", nrow(ncbi_parsed), nrow(bold_parsed)))
+# 1C. Supplemental Standardization
+# Supplemental does not include sequence types. We label them as "other_unknown"
+# no metadata on sequence completeness. We label as "seq_status"
+# sequences provided by Mlinarec. We label source as "local"
+# generate unique code for local sequences
+local_raw$seq_type <- "12S"
+local_raw$sequence_id <- paste0("loc", sprintf("%02d", 1:29))
+local_raw$sequence <- gsub("-", "", toupper(local_raw$sequence))
+
+local_parsed <- rb_parse_source_table(
+  raw = local_raw,
+  source_name = "local",
+  column_map = c(
+    sequence_id = "sequence_id",
+    species = "species_name",
+    sequence = "sequence"
+  )
+)
+
+message(sprintf("Standardized: %d NCBI seqs, %d BOLD seqs, %d supplemental seqs.", nrow(ncbi_parsed), nrow(bold_parsed), nrow(local_parsed)))
 
 
 # ----------------------------------------------------------
@@ -82,7 +102,7 @@ message(sprintf("Standardized: %d NCBI seqs, %d BOLD seqs.", nrow(ncbi_parsed), 
 # ----------------------------------------------------------
 message("\n>>> Combining sources and resolving ambiguities...")
 
-combined <- rb_combine_sources(list(ncbi_parsed, bold_parsed))
+combined <- rb_combine_sources(list(ncbi_parsed, bold_parsed, local_parsed))
 
 # Detect sequences assigned to multiple species
 combined <- rb_detect_ambiguity(combined)
@@ -100,7 +120,6 @@ if (n_ambig > 0) {
 # For this automated run, we drop unresolved ambiguities to prevent 
 # downstream QC and ML from failing on conflicting labels.
 resolved <- rb_resolve_ambiguous(combined, on_unresolved = "drop")
-
 
 # ----------------------------------------------------------
 # STAGE 3: The Curation Pipeline (QC, ML, Taxonomy, SQLite)

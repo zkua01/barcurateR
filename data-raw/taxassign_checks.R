@@ -13,13 +13,13 @@ library(DECIPHER)
 library(ape)
 library(dada2)
 
-db_path    <- "data-raw/slovenian_fish/processed/slovenian_fish_refdb.sqlite"
-asv_fasta  <- "data-raw/sava_river/processed/sava_asvs.fasta"
+db_path <- "data-raw/slovenian_fish/processed/slovenian_fish_refdb.sqlite"
+asv_fasta <- "data-raw/sava_river/processed/sava_asvs.fasta"
 counts_csv <- "data-raw/sava_river/processed/sava_abundance_table.csv"
 assign_csv <- "inst/extdata/sava_river_12s_assignments_two_pass.csv"  # RAW, pre-audit
 site_metadata <- "data-raw/sava_site_metadata.csv"
 spp_site_csv <- "inst/extdata/sava_river_community_matrix.csv"
-audit_dir  <- "exports/evaluation"; dir.create(audit_dir, recursive = TRUE, showWarnings = FALSE)
+audit_dir <- "exports/evaluation"; dir.create(audit_dir, recursive = TRUE, showWarnings = FALSE)
 FWD <- "AAACTCGTGCCAGCCACC"; RCREV <- "CAAACTGGGATTAGATACCC"
 force_rebuild <- FALSE
 
@@ -32,13 +32,13 @@ site_names <- sava_site$sample_name[match(colnames(sava_spp_site), sava_site$sam
 colnames(sava_spp_site) <- c(colnames(sava_spp_site)[1], site_names[-1])
 con <- rb_connect(db_path)
 all_refs <- rb_get_sequences(con, qc_flag = NULL)
-all_12S  <- all_refs |> filter(seq_type == "12S")
+all_12S <- all_refs |> filter(seq_type == "12S")
 sample_cols <- setdiff(names(sava_counts), "asv_id")
-cnt_mat     <- as.matrix(sava_counts[, sample_cols, drop = FALSE])
+cnt_mat <- as.matrix(sava_counts[, sample_cols, drop = FALSE])
 
 abund <- tibble(
-  asv_id    = sava_counts$asv_id,
-  total     = rowSums(cnt_mat),
+  asv_id = sava_counts$asv_id,
+  total = rowSums(cnt_mat),
   n_samples = rowSums(cnt_mat > 0)
 )
 
@@ -216,7 +216,7 @@ if (nrow(ties)) {
     mis_rows[[k]] <- single_ref_test(tx)
   }
 }
-tie_audit_tbl  <- bind_rows(tie_rows); mislabel_tbl <- bind_rows(mis_rows)
+tie_audit_tbl <- bind_rows(tie_rows); mislabel_tbl <- bind_rows(mis_rows)
 write_csv(tie_audit_tbl, file.path(audit_dir, "tie_audit.csv"))
 write_csv(mislabel_tbl, file.path(audit_dir, "single_reference_mislabel_test.csv"))
 rb_disconnect(con)

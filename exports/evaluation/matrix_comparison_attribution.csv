@@ -1,0 +1,42 @@
+species,total_reads_ours,total_reads_theirs,sites_detected_ours,sites_detected_theirs,factor,sub
+Abramis brama,78923,82308,77,77,-,concordant
+Alburnoides bipunctatus,87270,89085,76,76,-,concordant
+Alburnus alburnus,154957,160963,78,78,-,concordant
+Ballerus ballerus,14528,0,40,0,B,audit override: B. ballerus/sapa: species-level swap within genus
+Ballerus sapa,0,14524,0,40,B,audit override: see ballerus row
+Barbatula barbatula,0,297,0,27,B,references present but not Teleo-amplicon compatible
+Barbus barbus,130562,135887,78,78,-,concordant
+Barbus meridionalis,0,103270,0,78,C,paper retained range-implausible best hit; curated DB excludes
+Carassius auratus,3118,0,55,0,C,paper deleted alien/stocked taxon post hoc; study retains
+Chondrostoma nasus,696370,722474,78,78,-,concordant
+Clarias gariepinus,64,0,11,0,C,audit override: genuine Clarias refs; alien/contaminant finding retained
+Cobitis elongata,0,1297,0,58,B,references present but not Teleo-amplicon compatible
+Cobitis elongatoides,6534,6733,52,52,-,concordant
+Cottus gobio,518,0,7,0,A,low-abundance study detection (filter/depth sensitivity)
+Ctenopharyngodon idella,1741,1915,38,44,-,concordant
+Cyprinus carpio,7207,7405,74,76,-,concordant
+Esox lucius,4216,4543,53,61,-,concordant
+Gymnocephalus cernua,2396,2466,53,58,-,concordant
+Leuciscus aspius,29501,28924,65,67,-,concordant
+Leuciscus idus,26434,0,54,0,B,congener detected where paper reports sibling species
+Leuciscus leuciscus,2625,28272,46,54,-,concordant
+Neogobius fluviatilis,19,0,2,0,C,alien taxon: flag-vs-delete curation philosophy
+Neogobius melanostomus,11621,11743,61,62,-,concordant
+Oncorhynchus mykiss,3312,3447,46,52,-,concordant
+Perca fluviatilis,196,0,8,0,A,low-abundance study detection (filter/depth sensitivity)
+Phoxinus lumaireul,0,67,0,6,B,audit override: see phoxinus row
+Phoxinus phoxinus,76,0,5,0,B,audit override: P. phoxinus/lumaireul: species-complex swap
+Pseudorasbora parva,276,276,23,21,-,concordant
+Rhodeus amarus,11772,12456,78,78,-,concordant
+Romanogobio albipinnatus,0,3730,0,70,A,process difference (merging/filters/depth) - inferred
+Rutilus rutilus,0,2794,0,48,A,process difference (merging/filters/depth) - inferred
+Rutilus virgo,0,148768,0,77,A,process difference (merging/filters/depth) - inferred
+Sabanejewia balcanica,10575,10277,53,52,-,concordant
+Salmo trutta,355,357,7,8,-,concordant
+Salvelinus fontinalis,96,0,8,0,C,paper deleted alien/stocked taxon post hoc; study retains
+Sander lucioperca,1655,1925,22,24,-,concordant
+Silurus glanis,11645,11942,77,77,-,concordant
+Squalius cephalus,205784,206641,77,77,-,concordant
+Telestes souffia,422,0,3,0,A,low-abundance study detection (filter/depth sensitivity)
+Thymallus thymallus,615,0,10,0,A,low-abundance study detection (filter/depth sensitivity)
+Vimba vimba,97597,91830,78,78,-,concordant
