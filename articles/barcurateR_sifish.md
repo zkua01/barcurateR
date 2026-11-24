@@ -230,16 +230,19 @@ print(qc_sum)
 ``` r
 
 print(outputs[[1]])
-#>                                           qc_flag n_sequences
-#> 1                                            pass       10431
-#> 2                            manual_review_needed        5902
-#> 3                                    frameshifted        3317
-#> 4 tree_high_length_variation|manual_review_needed        1850
-#> 5                  divergent|manual_review_needed         332
-#> 6                                   internal_stop         284
-#> 7                      internal_stop|frameshifted          80
-#> 8                                    sequence_gap          31
-#> 9                                  sequence_short          13
+#>                                 qc_flag n_sequences
+#> 1                                  pass        5231
+#> 2                          frameshifted        2881
+#> 3                  manual_review_needed         444
+#> 4            internal_stop|frameshifted         348
+#> 5                         internal_stop         242
+#> 6                             divergent         103
+#> 7        divergent|manual_review_needed          48
+#> 8                frameshifted|divergent          39
+#> 9                          sequence_gap          38
+#> 10                       sequence_short          13
+#> 11 internal_stop|frameshifted|divergent          11
+#> 12              internal_stop|divergent           2
 ```
 
 #### Audit marker coverage
@@ -254,12 +257,12 @@ head(marker_cov)
 
 head(outputs[[2]])
 #>              order seq_type n_sequences n_sources
-#> 1 Acipenseriformes      12S          11         1
-#> 2 Acipenseriformes      16S           7         1
-#> 3 Acipenseriformes      18S           1         1
-#> 4 Acipenseriformes      COI          60         2
-#> 5 Acipenseriformes     CYTB          68         2
-#> 6 Acipenseriformes   genome          10         1
+#> 1 Acipenseriformes      12S          12         1
+#> 2 Acipenseriformes      16S           8         1
+#> 3 Acipenseriformes      COI          51         2
+#> 4 Acipenseriformes     CYTB          16         1
+#> 5 Acipenseriformes   genome          10         1
+#> 6   Anguilliformes      12S           9         1
 ```
 
 #### Audit taxonomic coverage
@@ -274,12 +277,12 @@ head(taxa_cov)
 
 head(outputs[[3]])
 #>                   species n_sequences
-#> 1           Abramis brama          60
-#> 2        Acipenser baerii          69
-#> 3      Acipenser ruthenus          53
-#> 4 Alburnoides bipunctatus         132
-#> 5       Alburnus alburnus          77
-#> 6      Alburnus arborella          35
+#> 1           Abramis brama          40
+#> 2        Acipenser baerii          39
+#> 3      Acipenser ruthenus          35
+#> 4 Alburnoides bipunctatus          26
+#> 5       Alburnus alburnus          53
+#> 6      Alburnus arborella           4
 ```
 
 ### Barcode gap analysis
@@ -302,48 +305,55 @@ head(poor_resolution)
 ``` r
 
 head(outputs[[4]])
-#>                   species marker n_sequences max_intra    min_inter gap_exists
-#> 1           Abramis brama   CYTB          23 0.3126521 0.0030413625          0
-#> 2        Acipenser baerii   CYTB          25 0.3111314 0.0009124088          0
-#> 3      Acipenser ruthenus   CYTB          27 0.3254258 0.0072992701          0
-#> 4 Alburnoides bipunctatus   CYTB         105 0.0586983 0.0413625304          0
-#> 5       Alburnus alburnus   CYTB          24 0.3086983 0.0036496350          0
-#> 6      Alburnus arborella   CYTB          31 0.1806569 0.0082116788          0
-#>     gap_width p_overlap q_overlap median_intra median_inter   intra_95
-#> 1 -0.30961071    0.7549    0.8848  0.105535280    0.1517640 0.30748175
-#> 2 -0.31021898    0.9500    0.9467  0.174574209    0.2010341 0.26434002
-#> 3 -0.31812652    0.7550    0.9436  0.137773723    0.1563260 0.31219586
-#> 4 -0.01733577    0.4762    0.0235  0.012165450    0.1146594 0.05687348
-#> 5 -0.30504866    0.8043    0.9535  0.046836983    0.1322993 0.28094586
-#> 6 -0.17244526    0.4860    0.7144  0.007603406    0.1055353 0.16545012
-#>      inter_5 percentile_gap robust_gap n_congeners_in_db min_congeneric
-#> 1 0.06082725   -0.246654501          0                 0             NA
-#> 2 0.07968370   -0.184656326          0                 1   0.0009124088
-#> 3 0.09124088   -0.220954988          0                 1   0.0009124088
-#> 4 0.06356448    0.006690998          1                 0             NA
-#> 5 0.06569343   -0.215252433          0                 1   0.0082116788
-#> 6 0.06265207   -0.102798054          0                 1   0.0082116788
-#>   congeneric_gap congeneric_p_overlap congeneric_q_overlap n_diagnostic_sites
-#> 1             NA                   NA                   NA                  0
-#> 2     -0.3102190               0.9500               0.9926                  0
-#> 3     -0.3245134               0.8205               0.9985                  0
-#> 4             NA                   NA                   NA                  0
-#> 5     -0.3004866               0.6884               0.9906                  0
-#> 6     -0.1724453               0.4860               0.7782                  0
-#>   sampling_adequacy taxonomic_resolution gap_may_be_undersampling_artifact
-#> 1               low      genus_or_higher                                 0
-#> 2          moderate      genus_or_higher                                 0
-#> 3          moderate      genus_or_higher                                 0
-#> 4               low      genus_or_higher                                 0
-#> 5          moderate      genus_or_higher                                 0
-#> 6          moderate      genus_or_higher                                 0
-#>   error_msg assignment_risk recommended_threshold
-#> 1      <NA>            high                  0.97
-#> 2      <NA>            high                  0.97
-#> 3      <NA>            high                  0.97
-#> 4      <NA>            high                  0.97
-#> 5      <NA>            high                  0.97
-#> 6      <NA>            high                  0.97
+#>                   species marker n_sequences   max_intra    min_inter
+#> 1       Carassius auratus genome          54 0.087114963 2.462266e-05
+#> 2       Carassius gibelio genome           5 0.001822077 1.477359e-04
+#> 3 Ctenopharyngodon idella genome           9 0.049688523 3.287125e-02
+#> 4         Cyprinus carpio genome          38 0.605274173 2.462266e-05
+#> 5     Oncorhynchus mykiss genome          11 0.055745697 3.986408e-02
+#> 6            Salmo trutta genome          10 0.484869377 3.986408e-02
+#>   gap_exists    gap_width p_overlap q_overlap median_intra median_inter
+#> 1          0 -0.087090341    0.9951    0.1627  0.015684633    0.1162682
+#> 2          0 -0.001674341    0.9000    0.0061  0.001391180    0.1397336
+#> 3          0 -0.016817275    0.2222    0.1813  0.000972595    0.1082289
+#> 4          0 -0.605249551    0.9957    0.9968  0.002806983    0.1109251
+#> 5          0 -0.015881614    0.1818    0.0262  0.002142171    0.1094723
+#> 6          0 -0.445005294    0.2000    0.8996  0.004653682    0.1086844
+#>      intra_95     inter_5 percentile_gap robust_gap n_congeners_in_db
+#> 1 0.084123310 0.060744097   -0.023379214          0                 1
+#> 2 0.001810996 0.005538867    0.003727870          1                 1
+#> 3 0.047792579 0.033412947   -0.014379632          0                 0
+#> 4 0.592418684 0.059537586   -0.532881097          0                 0
+#> 5 0.054113215 0.059537586    0.005424372          1                 0
+#> 6 0.484795509 0.057012533   -0.427782976          0                 0
+#>   min_congeneric congeneric_gap congeneric_p_overlap congeneric_q_overlap
+#> 1   0.0001477359   -0.086967227               0.9658               1.0000
+#> 2   0.0001477359   -0.001674341               0.9000               0.0519
+#> 3             NA             NA                   NA                   NA
+#> 4             NA             NA                   NA                   NA
+#> 5             NA             NA                   NA                   NA
+#> 6             NA             NA                   NA                   NA
+#>   n_diagnostic_sites sampling_adequacy taxonomic_resolution
+#> 1                  0          moderate      genus_or_higher
+#> 2                  0               low      genus_or_higher
+#> 3                 18               low      genus_or_higher
+#> 4                  0               low      genus_or_higher
+#> 5                 60               low      genus_or_higher
+#> 6                 44               low      genus_or_higher
+#>   gap_may_be_undersampling_artifact error_msg assignment_risk
+#> 1                                 0      <NA>            high
+#> 2                                 0      <NA>            high
+#> 3                                 0      <NA>            high
+#> 4                                 0      <NA>            high
+#> 5                                 0      <NA>            high
+#> 6                                 0      <NA>            high
+#>   recommended_threshold
+#> 1                  0.97
+#> 2                  0.97
+#> 3                  0.97
+#> 4                  0.97
+#> 5                  0.97
+#> 6                  0.97
 ```
 
 ``` r
@@ -508,12 +518,12 @@ head(final_assignments)
 #> # A tibble: 6 × 16
 #>   asv_id species         genus family pident  qcov scovs ccovs   evalue bitscore
 #>   <chr>  <chr>           <chr> <chr>   <dbl> <dbl> <dbl> <dbl>    <dbl>    <dbl>
-#> 1 ASV_3  Squalius cepha… Squa… Cypri…  100   1     0.931 0.965 1.39e-84      302
-#> 2 ASV_5  Alburnus albur… Albu… Cypri…  100   1     0.931 0.965 1.39e-84      302
-#> 3 ASV_7  Barbus barbus   Barb… Cypri…  100   1     0.931 0.965 4.98e-84      300
-#> 4 ASV_9  Vimba vimba     Vimba Cypri…  100   1     0.931 0.965 1.39e-84      302
-#> 5 ASV_12 Abramis brama   Abra… Cypri…  100   1     0.932 0.965 3.90e-85      303
-#> 6 ASV_13 Chondrostoma s… Chon… Cypri…   99.4 0.994 0.926 0.959 2.33e-82      294
+#> 1 ASV_2  Chondrostoma n… Chon… Cypri…  100   0.994 0.953 0.973 7.87e-84      300
+#> 2 ASV_3  Squalius cepha… Squa… Cypri…  100   1     0.931 0.965 2.19e-84      302
+#> 3 ASV_5  Alburnus albur… Albu… Cypri…  100   1     0.931 0.965 2.19e-84      302
+#> 4 ASV_7  Barbus barbus   Barb… Cypri…  100   1     0.931 0.965 7.82e-84      300
+#> 5 ASV_9  Vimba vimba     Vimba Cypri…  100   1     0.931 0.965 2.19e-84      302
+#> 6 ASV_11 Alburnoides bi… Albu… Cypri…   99.4 0.994 0.953 0.973 1.03e-82      296
 #> # ℹ 6 more variables: bitscore_pb <dbl>, n_best_species <dbl>,
 #> #   assignment_status <chr>, confidence <chr>, tie_taxa <lgl>, db_source <chr>
 ```
@@ -545,13 +555,13 @@ write_csv(
 
 community_matrix[1:5, 1:5]
 #> # A tibble: 5 × 5
-#>   species             SRR31349521 SRR31349522 SRR31349523 SRR31349524
-#>   <chr>                     <dbl>       <dbl>       <dbl>       <dbl>
-#> 1 Abramis brama               251         187          38          42
-#> 2 Alburnus alburnus           511         272          59          55
-#> 3 Ballerus ballerus          1203        1013          39          30
-#> 4 Barbatula barbatula           0           0           0           0
-#> 5 Barbus barbus               764         610         146         118
+#>   species                 SRR31349521 SRR31349522 SRR31349523 SRR31349524
+#>   <chr>                         <dbl>       <dbl>       <dbl>       <dbl>
+#> 1 Abramis brama                   251         187          38          42
+#> 2 Alburnoides bipunctatus         552         485          20          22
+#> 3 Alburnus alburnus               511         272          59          55
+#> 4 Ballerus ballerus                 0           0           0           0
+#> 5 Barbus barbus                   764         610         146         118
 ```
 
 ## Conclusion
