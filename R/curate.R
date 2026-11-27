@@ -396,10 +396,12 @@ rb_run_qc_checks <- function(data,
     data$seq_status <- "unknown"
   }
   
-  stale_cols <- intersect(names(data), c("div_result", "qc_flag",
-                                         "is_contaminant", "is_numt",
-                                         "has_stop", "frameshifted",
-                                         "has_short", "has_gaps", "genome_flag"))
+  stale_cols <- intersect(names(data), c(
+    "div_result","qc_flag","qc_note","is_contaminant","is_numt",
+    "has_stop","frameshifted","has_short","has_gaps","genome_flag",
+    "n_internal_stops","best_frame","coding_strand","frame_complete","codon_check_run",
+    "n_gap_chars","n_ambiguous","n_base","frac_ambig","max_gap_run",
+    "amplicon_covered","window_strand","n_ambiguous_in_window","window_budget"))
   
   if (length(stale_cols) > 0) {
     data <- data[, setdiff(names(data), stale_cols), drop = FALSE]
@@ -425,31 +427,15 @@ rb_run_qc_checks <- function(data,
   
   # 3. Codons (applies to COI)
   message("  -> Checking codons...")
-  codon_res <- mapply(
-    function(seq, gene) rb_check_codons(seq, gene),
-    data$sequence, data$seq_type,
-    SIMPLIFY = FALSE
-  )
-  data$has_stop <- vapply(codon_res, function(x) {
-    ifelse(is.na(x$has_stop), FALSE, x$has_stop)
-  }, logical(1))
-  data$frameshifted <- vapply(codon_res, function(x) {
-    ifelse(is.na(x$frameshifted), FALSE, x$frameshifted)
-  }, logical(1))
+  codon_res <- rb_check_codons(data$sequence, data$seq_type)
   
   # 4. rRNA integrity
   message("  -> Checking rRNA integrity...")
-  rrna_res <- mapply(
-    function(seq, gene) rb_check_rrna_integrity(seq, gene),
-    data$sequence, data$seq_type,
-    SIMPLIFY = FALSE
-  )
-  data$has_short <- vapply(rrna_res, function(x) {
-    ifelse(is.na(x$has_short), FALSE, x$has_short)
-  }, logical(1))
-  data$has_gaps <- vapply(rrna_res, function(x) {
-    ifelse(is.na(x$has_gaps), FALSE, x$has_gaps)
-  }, logical(1))
+  rrna_res <- rb_check_rrna_integrity(data$sequence, data$seq_type)
+  
+  new_cols <- union(names(codon_res), names(rrna_res))
+  data <- data[, setdiff(names(data), new_cols), drop = FALSE]
+  data <- cbind(data, codon_res, rrna_res)
   
   # 5. Divergence
   if (isTRUE(run_divergence)) {
@@ -500,6 +486,6 @@ rb_run_qc_checks <- function(data,
     }, character(1))
   }
   
-  data <- rb_compile_qc_flags(data, extra_flag_fn = extra_flags)
+  data <- rb_compile_qc_flags(data)
   data
 }
