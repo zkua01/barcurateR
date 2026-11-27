@@ -1,6 +1,6 @@
 Package: barcurateR
 Title: Standardize, Curate, Audit, and Deploy DNA Reference Databases
-Version: 0.2.0
+Version: 0.3.0
 Authors@R: c(
     person("Zi Xun", "Kua", email = "zixunkua@gmail.com", role = c("aut", "cre")),
     person("Katja", "Pogačar", role = "aut"),
@@ -10,7 +10,7 @@ Description: Provides tools to standardize, curate, query, audit, and export
     ecological metabarcoding in a reproducible manner. The package includes 
     a high-level curation wrapper, quality control pipelines, ML-based 
     marker classification, and barcode gap analysis.
-License: MIT + file LICENSE
+License: GPL-3 LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 Depends: R (>= 4.1)
