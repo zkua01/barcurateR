@@ -23,28 +23,24 @@ make_wrapper_test_data <- function() {
   # Track all generated sequences so that no two species share the same sequence.
   seen <- character(0)
   
-  make_unique_sequences <- function(n, length) {
+  make_unique_sequences <- function(n, length, generator = NULL) {
     out <- character(n)
     
     for (i in seq_len(n)) {
       repeat {
-        candidate <- paste(
-          sample(c("A", "C", "G", "T"), length, replace = TRUE),
-          collapse = ""
-        )
-        
+        candidate <- if(is.null(generator))
+          paste(sample(c("A", "C", "G", "T"), length, replace = TRUE),collapse = "")
+        else generator(length)
         if (!candidate %in% seen) break
       }
-      
       out[i] <- candidate
       seen <<- c(seen, candidate)
     }
-    
     out
   }
   
   # COI-like sequences: length 300
-  coi_seqs <- make_unique_sequences(10, 300)
+  coi_seqs <- make_unique_sequences(10, 300, generator = function(L) synthetic_orf(L/3))
   
   # 12S-like sequences: length 150
   s12_seqs <- make_unique_sequences(10, 150)
@@ -506,4 +502,46 @@ test_that("rb_curate_reference handles missing required columns gracefully", {
     rb_curate_reference(bad_data),
     "Missing required columns"
   )
+})
+
+test_that("new QC metadata survives the SQLite round-trip", {
+  skip_if_not_installed("RSQLite")
+  d <- make_wrapper_test_data()
+  tax <- make_wrapper_taxonomy(unique(d$species))
+  db <- tempfile(fileext = ".db")
+  r <- rb_curate_reference(d, taxonomy_table = tax, run_classifier = FALSE,
+                           run_divergence = FALSE, run_barcode_gap = FALSE,
+                           db_path = db)
+  new_cols <- c("qc_note","n_gap_chars","n_ambiguous","n_base","frac_ambig",
+                "frame_complete","codon_check_run","n_internal_stops","coding_strand")
+  expect_true(all(new_cols %in% names(r$qc1)))
+  con <- DBI::dbConnect(RSQLite::SQLite(), db)
+  db_cols <- DBI::dbListFields(con, "reference_final")
+  DBI::dbDisconnect(con)
+  expect_true(all(new_cols %in% db_cols))   # catches db-write dropping unknown columns
+})
+
+test_that("ambiguous-but-clean 12S reaches pass end-to-end", {
+  s <- strrep("ACGT", 60)                                    # 240 bp
+  d <- data.frame(species = c("Sp_a","Sp_b"),
+                  sequence = c(s, paste0(substr(s,1,120), "S", substr(s,121,240))),
+                  seq_type = "12S", source = "test", stringsAsFactors = FALSE)
+  r <- rb_curate_reference(d, taxonomy_table = make_wrapper_taxonomy(d$species),
+                           run_classifier = FALSE, run_divergence = FALSE,
+                           run_barcode_gap = FALSE, db_path = NULL)
+  expect_equal(r$qc1$qc_flag[2], "pass")
+  expect_match(r$qc1$qc_note[2], "ambiguous_bases")
+})
+
+test_that("partial stop-free COI is not frameshifted end-to-end", {
+  d <- data.frame(species = "Sp_coi",
+                  sequence = paste0(synthetic_orf(219), "A"),   # 658 bp
+                  seq_type = "COI", source = "test", stringsAsFactors = FALSE)
+  r <- rb_curate_reference(d, taxonomy_table = make_wrapper_taxonomy(d$species),
+                           run_classifier = FALSE, run_divergence = FALSE,
+                           run_barcode_gap = FALSE, db_path = NULL)
+  expect_true(r$qc1$codon_check_run)
+  expect_false(r$qc1$frameshifted)
+  expect_false(r$qc1$frame_complete)
+  expect_equal(r$qc1$qc_flag, "pass")
 })

@@ -93,7 +93,7 @@ test_that("rb_check_codons returns NA for non-coding genes", {
 test_that("rb_check_codons detects clean COI sequences", {
   skip_if_not_installed("Biostrings")
   
-  # A clean COI-like sequence (multiple of 3, no internal stops in best frame)
+  # A clean COI-like sequence (multiple of 3 (6), no internal stops in best frame)
   clean_seq <- "TCTTTATCTTTAATTGATAAGCAATGCCTTCAATCTTCAATGGATAAATATGCTGGTACTAATGGT"
   
   result <- rb_check_codons(clean_seq, gene = "COI")
@@ -102,21 +102,40 @@ test_that("rb_check_codons detects clean COI sequences", {
   expect_false(is.na(result$has_stop))
   expect_false(is.na(result$frameshifted))
   expect_false(is.na(result$best_frame))
-  expect_true(result$best_frame %in% c(1, 2, 3))
+  expect_true(result$best_frame %in% c(1:6))
 })
 
 
-test_that("rb_check_codons detects frameshifted sequences", {
-  
-  # A sequence not divisible by 3 should be flagged as frameshifted
-  frameshift_seq <- "TCTTTATCTTTAATTGATAAGCAATGCCTTCAATCTTCAATGGATAAATATGCTGGTACTAATGG"  # 65 bp (not multiple of 3)
-  
-  result <- rb_check_codons(frameshift_seq, gene = "COI")
-  
-  expect_type(result, "list")
-  expect_true(result$frameshifted)
+test_that("rb_check_codons does not flag partial in-frame CDS as frameshifted", {
+  s <- paste0(paste(rep("ATG", 219), collapse = ""), "A")   # 658 bp, %% 3 == 1
+  r <- rb_check_codons(s, gene = "COI")
+  expect_false(r$frameshifted)
+  expect_false(r$frame_complete)
+  expect_true(r$codon_check_run)
 })
 
+test_that("genuine frameshift is detected via internal stops", {
+  set.seed(42)
+  orf <- synthetic_orf(400)
+  s <- paste0(substr(orf, 1, 600), "A", substr(orf, 601, nchar(orf)))
+  r <- rb_check_codons(s, gene = "COI")
+  expect_true(r$codon_check_run)
+  expect_true(r$frameshifted)
+})
+
+test_that("reverse-complemented CDS is recognised", {
+  set.seed(42)
+  orf <- synthetic_orf()
+  rc  <- as.character(Biostrings::reverseComplement(Biostrings::DNAString(orf)))
+  expect_equal(rb_check_codons(orf, gene = "COI")$coding_strand, "F")
+  expect_equal(rb_check_codons(rc,  gene = "COI")$coding_strand, "R")
+})
+
+test_that("terminal stop is not counted as internal", {
+  set.seed(42)
+  r <- rb_check_codons(paste0(synthetic_orf(50), "TAA"), gene = "COI")
+  expect_false(r$has_stop)
+})
 
 test_that("rb_check_codons handles empty or invalid sequences gracefully", {
   
@@ -173,6 +192,8 @@ test_that("rb_check_rrna_integrity flags sequences with gaps or ambiguity", {
   expect_type(result, "list")
   expect_false(result$has_short)
   expect_true(result$has_gaps)
+  expect_equal(rb_compile_qc_flags(
+    qc_fixture(seq_type = "16S", n_gap_chars = 1L))$qc_flag, "pass")
 })
 
 
@@ -191,91 +212,52 @@ test_that("rb_check_rrna_integrity passes clean sequences", {
 # rb_compile_qc_flags(): flag compilation (Stage 8)
 # ------------------------------------------------------------
 
+test_that("informational conditions do not block pass", {
+  out <- rb_compile_qc_flags(qc_fixture(seq_type = "12S", n_ambiguous = 2L))
+  expect_equal(out$qc_flag, "pass")
+  expect_match(out$qc_note, "ambiguous_bases")
+})
+
+test_that("hard flags still exclude and combine", {
+  out <- rb_compile_qc_flags(qc_fixture(is_contaminant = TRUE, is_numt = TRUE))
+  expect_match(out$qc_flag, "contaminant")
+  expect_match(out$qc_flag, "numt")
+  expect_match(out$qc_flag, "\\|")
+})
+
 test_that("rb_compile_qc_flags returns 'pass' when no issues are flagged", {
-  
-  test_data <- data.frame(
-    is_contaminant = FALSE,
-    is_numt = FALSE,
-    has_stop = FALSE,
-    frameshifted = FALSE,
-    has_short = FALSE,
-    has_gaps = FALSE,
-    genome_flag = NA_character_,
-    div_result = NA_character_,
-    gene = "COI",
-    stringsAsFactors = FALSE
-  )
-  
-  result <- rb_compile_qc_flags(test_data)
-  
-  expect_s3_class(result, "data.frame")
-  expect_true("qc_flag" %in% names(result))
-  expect_equal(result$qc_flag, "pass")
+  out <- rb_compile_qc_flags(qc_fixture())
+  expect_equal(out$qc_flag, "pass")
+  expect_true(is.na(out$qc_note))
 })
 
-
-test_that("rb_compile_qc_flags combines multiple flags with pipe separator", {
-  
-  test_data <- data.frame(
-    is_contaminant = TRUE,
-    is_numt = TRUE,
-    has_stop = FALSE,
-    frameshifted = FALSE,
-    has_short = FALSE,
-    has_gaps = FALSE,
-    genome_flag = NA_character_,
-    div_result = NA_character_,
-    gene = "COI",
-    stringsAsFactors = FALSE
-  )
-  
-  result <- rb_compile_qc_flags(test_data)
-  
-  expect_true(grepl("contaminant", result$qc_flag))
-  expect_true(grepl("numt", result$qc_flag))
-  expect_true(grepl("\\|", result$qc_flag))
-})
-
-
-test_that("rb_compile_qc_flags flags 'other' gene as manual_review_needed", {
-  
-  test_data <- data.frame(
-    is_contaminant = FALSE,
-    is_numt = FALSE,
-    has_stop = FALSE,
-    frameshifted = FALSE,
-    has_short = FALSE,
-    has_gaps = FALSE,
-    genome_flag = NA_character_,
-    div_result = NA_character_,
-    gene = "other",
-    stringsAsFactors = FALSE
-  )
-  
-  result <- rb_compile_qc_flags(test_data, extra_flag_fn = default_extra_flags)
-  
-  expect_true(grepl("manual_review_needed", result$qc_flag))
+test_that("rb_compile_qc_flags flags 'other' or 'other_unknown' gene as manual_review_needed", {
+  out <- rb_compile_qc_flags(qc_fixture(n = 2L, seq_type = c("other", "other_unknown")))
+  expect_true(all(grepl("manual_review_needed", out$qc_flag)))
 })
 
 
 test_that("rb_compile_qc_flags handles divergent and tree error results", {
-  
-  test_data <- data.frame(
-    is_contaminant = FALSE,
-    is_numt = FALSE,
-    has_stop = FALSE,
-    frameshifted = FALSE,
-    has_short = FALSE,
-    has_gaps = FALSE,
-    genome_flag = NA_character_,
-    div_result = c("divergent", "tree_error", "pass"),
-    gene = c("COI", "COI", "COI"),
-    stringsAsFactors = FALSE
-  )
-  
-  result <- rb_compile_qc_flags(test_data, extra_flag_fn = default_extra_flags)
-  
-  expect_true(grepl("divergent", result$qc_flag[1]))
-  expect_true(grepl("tree_tree_error", result$qc_flag[2]))
-  expect_equal(result$qc_flag[3], "pass")
+  out <- rb_compile_qc_flags(qc_fixture(n = 3L,
+                                        div_result = c("divergent", "tree_error", "pass")))
+  expect_match(out$qc_flag[1], "divergent")
+  expect_equal(out$qc_flag[2], "pass")            # soft → not in qc_flag
+  expect_match(out$qc_note[2], "tree_error")      # and named tree_error, not tree_tree_error
+  expect_equal(out$qc_flag[3], "pass")
+})
+
+test_that("sequence features use biological length", {
+  r <- rb_sequence_features("ACGT-ACGTN")
+  expect_equal(r$length, 9)      # 8 ACGT + 1 N; gap excluded, nchar would be 10
+})
+
+test_that("codon check runs rather than silently aborting on ambiguity", {
+  set.seed(42)
+  r <- rb_check_codons(paste0(synthetic_orf(30), "NNN"), gene = "COI")
+  expect_true(r$codon_check_run)
+})
+
+test_that("aborted codon check is not certified as pass", {
+  out <- rb_compile_qc_flags(qc_fixture(seq_type = "COI", codon_check_run = FALSE))
+  expect_match(out$qc_flag, "check_failed")
 })

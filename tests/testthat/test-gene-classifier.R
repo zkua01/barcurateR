@@ -323,29 +323,14 @@ test_that("QC pipeline handles reclassified sequences correctly", {
 test_that("rb_compile_qc_flags handles mixed reclassified and original data", {
   
   # Simulate data after QC Pass 2 with mixed gene types
-  mixed_data <- data.frame(
-    is_contaminant = c(FALSE, FALSE, TRUE),
-    is_numt = c(FALSE, TRUE, FALSE),
-    has_stop = c(FALSE, NA, NA),
-    frameshifted = c(FALSE, NA, NA),
-    has_short = c(NA, FALSE, NA),
-    has_gaps = c(NA, FALSE, NA),
-    genome_flag = NA_character_,
-    div_result = NA_character_,
-    gene = c("COI", "12S", "other"),
-    stringsAsFactors = FALSE
-  )
-  
-  # Define extra_flag_fn for value-based flags
-  extra_flags <- function(data) {
-    vapply(seq_len(nrow(data)), function(i) {
-      flags <- c()
-      if (data$gene[i] == "other") flags <- c(flags, "manual_review_needed")
-      paste(flags, collapse = "|")
-    }, character(1))
-  }
-  
-  result <- rb_compile_qc_flags(mixed_data, extra_flag_fn = extra_flags)
+  mixed_data <- qc_fixture(n = 3L,
+                           is_contaminant = c(FALSE, FALSE, TRUE),
+                           is_numt = c(FALSE, TRUE, FALSE),
+                           has_stop = c(FALSE, NA, NA),
+                           frameshifted = c(FALSE, NA, NA),
+                           has_short = c(NA, FALSE, NA),
+                           seq_type = c("COI", "12S", "other"))
+  result <- rb_compile_qc_flags(mixed_data)
   
   expect_s3_class(result, "data.frame")
   expect_true("qc_flag" %in% names(result))
