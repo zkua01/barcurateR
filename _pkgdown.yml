@@ -23,6 +23,7 @@ reference:
     desc: "Functions for standardizing, merging, and quality-controlling reference sequences."
     contents:
     - starts_with("rb_parse")
+    - rb_sequence_composition
     - starts_with("rb_combine")
     - starts_with("rb_resolve")
     - starts_with("rb_curate")
