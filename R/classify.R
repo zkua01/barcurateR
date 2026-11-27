@@ -59,13 +59,13 @@ NULL
 rb_sequence_features <- function(sequence) {
   seq_upper <- toupper(sequence)
 
-  length_val <- nchar(seq_upper)
   gc_count <- stringr::str_count(seq_upper, "[GC]")
   at_count <- stringr::str_count(seq_upper, "[AT]")
   g_count <- stringr::str_count(seq_upper, "G")
   c_count <- stringr::str_count(seq_upper, "C")
   a_count <- stringr::str_count(seq_upper, "A")
   t_count <- stringr::str_count(seq_upper, "T")
+  length_val <- gc_count + at_count + stringr::str_count(seq_upper, "[RYKMSWBDHVN]")
 
   total_bases <- gc_count + at_count
   gc_content <- ifelse(total_bases > 0, gc_count / total_bases, 0)
