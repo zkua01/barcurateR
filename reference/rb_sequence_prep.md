@@ -57,7 +57,8 @@ sequence.
 Other parsing:
 [`rb_ambiguity_utils`](https://zkua01.github.io/barcurateR/reference/rb_ambiguity_utils.md),
 [`rb_combine_resolve`](https://zkua01.github.io/barcurateR/reference/rb_combine_resolve.md),
-[`rb_parse_sources`](https://zkua01.github.io/barcurateR/reference/rb_parse_sources.md)
+[`rb_parse_sources`](https://zkua01.github.io/barcurateR/reference/rb_parse_sources.md),
+[`rb_sequence_composition()`](https://zkua01.github.io/barcurateR/reference/rb_sequence_composition.md)
 
 ## Examples
 

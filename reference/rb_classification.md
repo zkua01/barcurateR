@@ -121,6 +121,9 @@ These functions require the tidymodels packages (`parsnip`, `recipes`,
 them with `install.packages('tidymodels')` and
 `install.packages('ranger')`.
 
+`length` describes the biological sequence length (count of ACGT plus
+IUPAC ambiguity codes; excluding alignment padding).
+
 ## Examples
 
 ``` r

@@ -124,6 +124,7 @@ simplified into standardized `seq_type` labels (e.g., "`COI`",
 Other parsing:
 [`rb_ambiguity_utils`](https://zkua01.github.io/barcurateR/reference/rb_ambiguity_utils.md),
 [`rb_combine_resolve`](https://zkua01.github.io/barcurateR/reference/rb_combine_resolve.md),
+[`rb_sequence_composition()`](https://zkua01.github.io/barcurateR/reference/rb_sequence_composition.md),
 [`rb_sequence_prep`](https://zkua01.github.io/barcurateR/reference/rb_sequence_prep.md)
 
 ## Examples

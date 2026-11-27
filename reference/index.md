@@ -17,6 +17,8 @@ sequences.
   [`rb_extract_markers()`](https://zkua01.github.io/barcurateR/reference/rb_parse_sources.md)
   [`rb_parse_source_table()`](https://zkua01.github.io/barcurateR/reference/rb_parse_sources.md)
   : Parse and standardize source sequence tables
+- [`rb_sequence_composition()`](https://zkua01.github.io/barcurateR/reference/rb_sequence_composition.md)
+  : Characterise nucleotide composition of DNA sequences
 - [`rb_combine_sources()`](https://zkua01.github.io/barcurateR/reference/rb_combine_resolve.md)
   [`rb_resolve_ambiguous()`](https://zkua01.github.io/barcurateR/reference/rb_combine_resolve.md)
   : Combine parsed sources and resolve ambiguous sequences

@@ -65,6 +65,7 @@ using the `ambiguity_data` or `ambiguity_path` arguments.
 Other parsing:
 [`rb_combine_resolve`](https://zkua01.github.io/barcurateR/reference/rb_combine_resolve.md),
 [`rb_parse_sources`](https://zkua01.github.io/barcurateR/reference/rb_parse_sources.md),
+[`rb_sequence_composition()`](https://zkua01.github.io/barcurateR/reference/rb_sequence_composition.md),
 [`rb_sequence_prep`](https://zkua01.github.io/barcurateR/reference/rb_sequence_prep.md)
 
 ## Examples

@@ -27,7 +27,7 @@ within species/gene groups using MAFFT alignment and FastTree.
 
     <a class="navbar-brand me-2" href="../index.html">barcurateR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -37,6 +37,7 @@ within species/gene groups using MAFFT alignment and FastTree.
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto"><li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item"><a class="nav-link" href="../articles/index.html">Articles</a></li>
+<li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json"></form></li>
 <li class="nav-item"><a class="external-link nav-link" href="https://github.com/zkua01/barcurateR/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
@@ -66,13 +67,20 @@ within species/gene groups using MAFFT alignment and FastTree.</p></li>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">rb_check_codons</span><span class="op">(</span><span class="va">sequence</span>, <span class="va">gene</span>, coding_genes <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"COI"</span><span class="op">)</span>, genetic_code <span class="op">=</span> <span class="st">"2"</span><span class="op">)</span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">rb_check_codons</span><span class="op">(</span></span>
+<span>  <span class="va">sequence</span>,</span>
+<span>  <span class="va">gene</span>,</span>
+<span>  coding_genes <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"COI"</span>, <span class="st">"CYTB"</span>, <span class="st">"complete_genome"</span>, <span class="st">"genome"</span>, <span class="st">"multi_marker"</span><span class="op">)</span>,</span>
+<span>  genetic_code <span class="op">=</span> <span class="st">"2"</span>,</span>
+<span>  max_internal_stops <span class="op">=</span> <span class="fl">2L</span></span>
+<span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">rb_check_rrna_integrity</span><span class="op">(</span></span>
 <span>  <span class="va">sequence</span>,</span>
 <span>  <span class="va">gene</span>,</span>
 <span>  rrna_genes <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"12S"</span>, <span class="st">"16S"</span><span class="op">)</span>,</span>
-<span>  min_length <span class="op">=</span> <span class="fl">100</span></span>
+<span>  min_length <span class="op">=</span> <span class="fl">100L</span>,</span>
+<span>  max_ambiguous_frac <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">rb_check_divergence</span><span class="op">(</span></span>
@@ -110,12 +118,31 @@ Default <code>c("COI")</code>.</p></dd>
 <dd><p>Genetic code table (default <code>"2"</code> for vertebrate mtDNA).</p></dd>
 
 
+<dt id="arg-max-internal-stops">max_internal_stops<a class="anchor" aria-label="anchor" href="#arg-max-internal-stops"></a></dt>
+<dd><p>Integer scalar (default <code>2L</code>). Maximum number of
+internal stop codons tolerated in the best of the six reading frames
+before the record is flagged <code>frameshifted</code>. The terminal stop of a
+complete CDS is not counted. <code>has_stop</code> is set independently whenever any
+internal stop is present, so lowering this value only tightens the
+<code>frameshifted</code> flag, not <code>internal_stop</code>.</p></dd>
+
+
 <dt id="arg-rrna-genes">rrna_genes<a class="anchor" aria-label="anchor" href="#arg-rrna-genes"></a></dt>
 <dd><p>Gene types to check for rRNA integrity.</p></dd>
 
 
 <dt id="arg-min-length">min_length<a class="anchor" aria-label="anchor" href="#arg-min-length"></a></dt>
 <dd><p>Minimum expected length for rRNA sequences.</p></dd>
+
+
+<dt id="arg-max-ambiguous-frac">max_ambiguous_frac<a class="anchor" aria-label="anchor" href="#arg-max-ambiguous-frac"></a></dt>
+<dd><p>Numeric scalar in <code>[0, 1]</code>, or <code>NULL</code> (default).
+Optional exclusion threshold on the proportion of ambiguous (IUPAC) bases
+among called bases (<code>frac_ambig</code>). When supplied, records with
+<code>frac_ambig &gt; max_ambiguous_frac</code> receive the <code>ambiguous_excess</code> flag and
+are excluded from the passing set. When <code>NULL</code>, ambiguity never excludes a
+record; it is reported only through the informational <code>ambiguous_bases</code>
+note and the <code>n_ambiguous</code> / <code>frac_ambig</code> metadata columns.</p></dd>
 
 
 <dt id="arg-data">data<a class="anchor" aria-label="anchor" href="#arg-data"></a></dt>
@@ -145,8 +172,62 @@ Default <code>c("COI")</code>.</p></dd>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
 
-<ul><li><p><code>rb_check_codons()</code> returns a list with <code>has_stop</code>, <code>frameshifted</code>, <code>best_frame</code>.</p></li>
-<li><p><code>rb_check_rrna_integrity()</code> returns a list with <code>has_short</code>, <code>has_gaps</code>.</p></li>
+<ul><li><p><code>rb_check_codons()</code> returns a <code>data.frame</code> with one row per input sequence:</p><dl><dt>has_stop</dt>
+<dd><p>Logical. <code>TRUE</code> if the best reading frame contains at least
+one internal stop codon. <code>NA</code> for non-coding markers.</p></dd>
+
+<dt>frameshifted</dt>
+<dd><p>Logical. <code>TRUE</code> iif <code>n_internal_stops</code> exceeds
+<code>max_internal_stops</code>. <code>NA</code> for non-coding markers.</p></dd>
+
+<dt>n_internal_stops</dt>
+<dd><p>Integer. Internal stop count in the best frame,
+excluding a terminal stop. <code>NA</code> for non-coding markers.</p></dd>
+
+<dt>best_frame</dt>
+<dd><p>Integer. Index of the selected frame among those
+evaluated (see Details). <code>NA</code> for non-coding markers.</p></dd>
+
+<dt>coding_strand</dt>
+<dd><p>Character. <code>"F"</code> if the best frame is on the supplied
+strand, <code>"R"</code> if on its reverse complement. <code>NA</code> for non-coding markers.</p></dd>
+
+<dt>frame_complete</dt>
+<dd><p>Logical. Whether the cleaned sequence length is a
+multiple of three (informational only). <code>NA</code> for non-coding markers.</p></dd>
+
+<dt>codon_check_run</dt>
+<dd><p>Logical tri-state</p></dd>
+ NA = check not applicable
+(non-coding markers); FALSE = attempted but could not complete;
+TRUE = completed. A FALSE value raises the check_failed QC flag.
+</dl></li>
+<li><p><code>rb_check_rrna_integrity()</code> returns a <code>data.frame</code> with one row per input sequence:</p><dl><dt>has_gaps</dt>
+<dd><p>Logical. <code>TRUE</code> if any gap character or IUPAC code is
+present. Informational; does not exclude a record. <code>NA</code> for non-rRNA
+markers.</p></dd>
+
+<dt>has_short</dt>
+<dd><p>Logical. <code>TRUE</code> if <code>n_base</code> is below <code>min_length</code>.
+<code>NA</code> for non-rRNA markers.</p></dd>
+
+<dt>n_gap_chars</dt>
+<dd><p>Integer. Count of <code>-</code> and <code>.</code> characters.</p></dd>
+
+<dt>n_ambiguous</dt>
+<dd><p>Integer. Count of IUPAC ambiguity codes.</p></dd>
+
+<dt>n_base</dt>
+<dd><p>Integer. Biological length, <code>n_acgt + n_ambiguous</code>.</p></dd>
+
+<dt>frac_ambig</dt>
+<dd><p>Numeric. <code>n_ambiguous / n_base</code>; <code>NA</code> when <code>n_base</code> is 0.</p></dd>
+
+<dt>max_gap_run</dt>
+<dd><p>Integer. Length of the longest contiguous gap run.</p></dd>
+
+
+</dl></li>
 <li><p><code>rb_check_divergence()</code> returns <code>data</code> with a <code>div_result</code> column.</p></li>
 </ul></div>
     <div class="section level2">
@@ -155,6 +236,28 @@ Default <code>c("COI")</code>.</p></dd>
 While this works on Unix-like systems, Windows users may need to ensure their shell
 environment (e.g., Git Bash or WSL) is properly configured, or install MSYS2, as the
 default cmd.exe may not support these pipes.</p>
+<p>Translation is attempted in six frames: three forward offsets and three on
+the reverse complement. The frame with the fewest internal stops is selected,
+so records deposited in reverse orientation are handled correctly. Frames shorter
+than three bases are skipped; for very short inputs <code>best_frame</code> therefore indexes
+the reduced set, and <code>coding_strand</code> is the more reliable identifier.</p>
+<p>Alignment padding (<code>-</code>, <code>.</code>) and whitespace are removed before translation;
+IUPAC ambiguity codes are retained and resolved with
+<code>Biostrings::translate(if.fuzzy.codon = "solve")</code>, so an ambiguous codon does
+not abort the check. A stop in the final codon is treated as a legitimate
+termination and excluded from the internal count.</p>
+<p>Stops are those of <code>genetic_code</code>, which defaults to <code>"2"</code> (vertebrate
+mitochondrial).</p>
+<p>Gap characters and ambiguity codes are reported separately because they mean
+different things. <code>-</code> and <code>.</code> may be alignment padding, a genuine deletion
+relative to other sequences, or undetermined bases; these cannot be
+distinguished from the character alone, so nothing is stripped or altered
+here. IUPAC codes represent real base-calling uncertainty and are retained.</p>
+<p>Neither condition excludes a record by default. Presence of gap or ambiguous
+characters is recorded in <code>has_gaps</code> and surfaced as the informational
+<code>sequence_gap</code> / <code>ambiguous_bases</code> notes by <code><a href="rb_qc_pipeline.html">rb_compile_qc_flags()</a></code>. Only
+<code>has_short</code> is excluding, and it is assessed on biological length so that
+alignment padding cannot inflate a short record past the threshold.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
@@ -163,6 +266,43 @@ default cmd.exe may not support these pipes.</p>
 <code><a href="rb_qc_screening.html">rb_qc_screening</a></code></p></div>
     </div>
 
+    <div class="section level2">
+    <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Non-coding markers: check not applicable</span></span></span>
+<span class="r-in"><span><span class="fu">rb_check_codons</span><span class="op">(</span><span class="st">"ACGTACGTACGT"</span>, gene <span class="op">=</span> <span class="st">"12S"</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   has_stop frameshifted n_internal_stops best_frame coding_strand</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1       NA           NA               NA         NA          &lt;NA&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   frame_complete codon_check_run</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1             NA              NA</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Coding marker: check completes, length is a multiple of three</span></span></span>
+<span class="r-in"><span><span class="va">res</span> <span class="op">&lt;-</span> <span class="fu">rb_check_codons</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/strrep.html" class="external-link">strrep</a></span><span class="op">(</span><span class="st">"ACGT"</span>, <span class="fl">30</span><span class="op">)</span>, gene <span class="op">=</span> <span class="st">"COI"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">res</span><span class="op">$</span><span class="va">codon_check_run</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] TRUE</span>
+<span class="r-in"><span><span class="va">res</span><span class="op">$</span><span class="va">frame_complete</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] TRUE</span>
+<span class="r-in"><span><span class="va">res</span><span class="op">$</span><span class="va">coding_strand</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "F"</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co">#' # Clean 200 bp reference</span></span></span>
+<span class="r-in"><span><span class="fu">rb_check_rrna_integrity</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/strrep.html" class="external-link">strrep</a></span><span class="op">(</span><span class="st">"ACGT"</span>, <span class="fl">50</span><span class="op">)</span>, gene <span class="op">=</span> <span class="st">"12S"</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   has_gaps has_short n_gap_chars n_ambiguous n_base frac_ambig max_gap_run</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1    FALSE     FALSE           0           0    200          0           0</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># One ambiguity code: informational, still passing</span></span></span>
+<span class="r-in"><span><span class="va">s</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/strrep.html" class="external-link">strrep</a></span><span class="op">(</span><span class="st">"ACGT"</span>, <span class="fl">50</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">s</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/substr.html" class="external-link">substr</a></span><span class="op">(</span><span class="va">s</span>, <span class="fl">1</span>, <span class="fl">100</span><span class="op">)</span>, <span class="st">"S"</span>, <span class="fu"><a href="https://rdrr.io/r/base/substr.html" class="external-link">substr</a></span><span class="op">(</span><span class="va">s</span>, <span class="fl">101</span>, <span class="fl">200</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">rb_check_rrna_integrity</span><span class="op">(</span><span class="va">s</span>, gene <span class="op">=</span> <span class="st">"12S"</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   has_gaps has_short n_gap_chars n_ambiguous n_base  frac_ambig max_gap_run</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1     TRUE     FALSE           0           1    201 0.004975124           0</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Padding does not count toward biological length</span></span></span>
+<span class="r-in"><span><span class="va">padded</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/strrep.html" class="external-link">strrep</a></span><span class="op">(</span><span class="st">"A"</span>, <span class="fl">90</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/strrep.html" class="external-link">strrep</a></span><span class="op">(</span><span class="st">"-"</span>, <span class="fl">50</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">rb_check_rrna_integrity</span><span class="op">(</span><span class="va">padded</span>, gene <span class="op">=</span> <span class="st">"12S"</span><span class="op">)</span><span class="op">$</span><span class="va">has_short</span>   <span class="co"># TRUE</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] TRUE</span>
+<span class="r-in"><span></span></span>
+</code></pre></div>
+    </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>
 
