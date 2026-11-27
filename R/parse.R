@@ -492,3 +492,65 @@ rb_resolve_ambiguous <- function(data, species_col = "species", sequence_col = "
     dplyr::bind_rows(combine_rows) %>%
     dplyr::distinct(.data[[species_col]], .data[[sequence_col]], .keep_all = TRUE)
 }
+
+#' Characterise nucleotide composition of DNA sequences
+#'
+#' Reports the character-class composition of sequences without modifying them.
+#' Separates unambiguous bases, IUPAC ambiguity codes, gap characters and any
+#' other characters, so that quality control can distinguish formatting
+#' artefacts from genuine base-calling uncertainty.
+#'
+#' @param sequence Character vector of nucleotide sequences. Case is ignored.
+#'   `NA` values are treated as empty strings.
+#'
+#' @return A [tibble::tibble()] with one row per input sequence:
+#' \describe{
+#'   \item{n_char}{Total characters in the stored string.}
+#'   \item{n_acgt}{Count of unambiguous bases (A, C, G, T).}
+#'   \item{n_dash}{Count of hyphen (`-`) characters.}
+#'   \item{n_dot}{Count of period (`.`) characters.}
+#'   \item{n_ambig}{Count of IUPAC ambiguity codes (R, Y, K, M, S, W, B, D, H, V, N).}
+#'   \item{n_other}{Count of characters belonging to none of the above classes.}
+#'   \item{n_gap_runs}{Number of contiguous runs of gap characters.}
+#'   \item{max_gap_run}{Length of the longest contiguous gap run; 0 if none.}
+#'   \item{n_base}{Biological length, `n_acgt + n_ambig`. Excludes gap characters.}
+#'   \item{frac_ambig}{`n_ambig / n_base`; `NA` when `n_base` is 0.}
+#' }
+#'
+#' @details
+#' Gap characters are **not** stripped or altered. Their meaning is
+#' context-dependent: they may be alignment padding, a genuine deletion
+#' relative to other sequences in an alignment, or undetermined bases in the
+#' source record. These cases cannot be distinguished from the character
+#' alone, so they are reported separately and any normalisation is left to an
+#' explicit, user-initiated step.
+#'
+#' IUPAC codes are retained as information. Use `n_base` as the denominator for
+#' ambiguity fractions and as the length measure for marker-level checks;
+#' `n_char` reflects the stored string and may be inflated by padding.
+#'
+#'
+#' @examples
+#' rb_sequence_composition(c("ACGTACGT", "ACGT-ACGT", "ACGTNACGT", "ACGT..ACGT"))
+#'
+#' @export
+rb_sequence_composition <- function(sequence) {
+  s <- toupper(as.character(sequence))
+  s[is.na(s)] <- ""
+  runs <- stringr::str_extract_all(s, "[-.]+")
+  n_acgt <- stringr::str_count(s, "[ACGT]")
+  n_ambig <- stringr::str_count(s, "[RYKMSWBDHVN]")
+  n_base <- n_acgt + n_ambig
+  data.frame(
+    n_char = nchar(s),
+    n_acgt = n_acgt,
+    n_dash = stringr::str_count(s, stringr::fixed("-")),
+    n_dot = stringr::str_count(s, stringr::fixed(".")),
+    n_ambig = n_ambig,
+    n_other = stringr::str_count(s, "[^ACGTRYSWKMBDHVN.\\-]"),
+    n_gap_runs = vapply(runs, length, integer(1)),
+    max_gap_run = vapply(runs, function(x) if (length(x)) max(nchar(x)) else 0L, integer(1)),
+    n_base = n_base,
+    frac_ambig = ifelse(n_base > 0, n_ambig / n_base, NA_real_)
+  )
+}
