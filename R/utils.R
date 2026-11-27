@@ -356,3 +356,16 @@ rb_read_ambiguity_csv <- function(path = "ambiguous_sequences.csv") {
   )
 }
 
+#' Prepare sequences for de novo alignment (internal)
+#'
+#' Removes alignment padding and whitespace, and converts IUPAC ambiguity
+#' codes to `N`, for algorithms that require an ungapped ACGTN input.
+#' Never used to modify stored sequences.
+#' @param sequence Character vector.
+#' @return Character vector of the same length.
+#' @keywords internal
+rb_prepare_for_alignment <- function(sequence) {
+  s <- toupper(as.character(sequence))
+  s <- gsub("[-.[:space:]]", "", s)
+  gsub("[^ACGT]", "N", s)
+}
