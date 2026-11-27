@@ -95,7 +95,7 @@ rb_build_gene_tree <- function(data, gene_type, gene_col = "seq_type",
   }
 
   tree_code <- paste0(gsub(" ", "-", gene_data[[species_col]]), "-", gene_data[[id_col]])
-  dna_seqs <- Biostrings::DNAStringSet(stats::setNames(gene_data[[sequence_col]], tree_code))
+  dna_seqs <- Biostrings::DNAStringSet(stats::setNames(rb_prepare_for_alignment(gene_data[[sequence_col]]), tree_code))
 
   alignment <- DECIPHER::AlignSeqs(dna_seqs, iteration = 3, refinement = 3, verbose = FALSE)
   alignment_bin <- ape::as.DNAbin(alignment)
