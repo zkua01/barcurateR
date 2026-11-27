@@ -53,3 +53,38 @@ create_mock_db <- function() {
   
   con
 }
+
+qc_fixture <- function(n = 1L, ...) {
+  d <- data.frame(
+    is_contaminant = rep(FALSE, n), is_numt = rep(FALSE, n),
+    has_stop = rep(FALSE, n), frameshifted = rep(FALSE, n),
+    has_short = rep(FALSE, n), div_result = rep(NA_character_, n),
+    seq_type = rep("COI", n), n_gap_chars = rep(0L, n),
+    n_ambiguous = rep(0L, n), frac_ambig = rep(0, n),
+    frame_complete = rep(NA, n), codon_check_run = rep(NA, n),
+    stringsAsFactors = FALSE)
+  mods <- list(...)
+  for (nm in names(mods)) d[[nm]] <- mods[[nm]]
+  d
+}
+
+synthetic_orf <- function(n_codons = 200L, genetic_code = "2") {
+  b <- c("A", "C", "G", "T")
+  all_codons <- apply(expand.grid(b, b, b), 1, paste0, collapse = "")
+  gc    <- Biostrings::getGeneticCode(genetic_code)
+  stops <- names(gc)[gc == "*"]
+  paste0(sample(setdiff(all_codons, stops), n_codons, replace = TRUE), collapse = "")
+}
+
+synthetic_orfs <- function(n_codons = 200L, seed = NULL) {
+  if  (!is.null(seed)) set.seed(seed)
+  out <- character(n)
+  seen <- character(0)
+  for (i in seq_len(n)) {
+    repeat {s <- synthetic_orf(n_codons)
+    if (!s  %in% seen) break}
+    out[i] <- s
+    seen <- c(seen, s)
+  }
+  out
+}
