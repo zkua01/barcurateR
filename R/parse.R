@@ -535,6 +535,11 @@ rb_resolve_ambiguous <- function(data, species_col = "species", sequence_col = "
 #' x$n_char   # 8  9  9 10  (stored string)
 #' x$n_base   # 8  8  9  8  (biological length)
 #'
+#' @name rb_sequence_composition
+#' @family parsing
+NULL
+
+#' @rdname rb_sequence_composition
 #' @export
 rb_sequence_composition <- function(sequence) {
   s <- toupper(as.character(sequence))
