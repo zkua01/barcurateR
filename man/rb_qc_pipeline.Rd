@@ -6,13 +6,7 @@
 \alias{rb_run_qc_pipeline}
 \title{Compile QC flags and run the full QC pipeline}
 \usage{
-rb_compile_qc_flags(
-  data,
-  checks = list(contaminant = "is_contaminant", numt = "is_numt", internal_stop =
-    "has_stop", frameshifted = "frameshifted", sequence_short = "has_short", sequence_gap
-    = "has_gaps"),
-  extra_flag_fn = NULL
-)
+rb_compile_qc_flags(data, exclude_flags = NULL, max_ambiguous_frac = NULL)
 
 rb_run_qc_pipeline(
   data,
@@ -31,9 +25,17 @@ rb_run_qc_pipeline(
 \arguments{
 \item{data}{A data frame containing sequences and check results.}
 
-\item{checks}{Named list mapping flag names to logical column names.}
+\item{exclude_flags}{Character vector of flags that prevent \code{"pass"}.
+\code{NULL} (default) uses the hard-flag set defined in the function body.}
 
-\item{extra_flag_fn}{Optional function returning additional flags.}
+\item{max_ambiguous_frac}{Numeric scalar in \verb{[0, 1]}, or \code{NULL} (default).
+Optional exclusion threshold on the proportion of ambiguous (IUPAC) bases
+among called bases (\code{frac_ambig}). When supplied, records with
+\code{frac_ambig > max_ambiguous_frac} receive the \code{ambiguous_excess} flag and
+are excluded from the passing set. When \code{NULL}, ambiguity never excludes a
+record; it is reported only through the informational \code{ambiguous_bases}
+note and the \code{n_ambiguous} / \code{frac_ambig} metadata columns. Requires the
+\code{frac_ambig} column to be present.}
 
 \item{blast_db}{Path to a BLAST database.}
 
@@ -48,7 +50,13 @@ rb_run_qc_pipeline(
 \item{coding_genes, rrna_genes}{Gene types for checks.}
 }
 \value{
-The input data frame with a \code{qc_flag} column added.
+The input data frame \code{data} with two columns added:
+\describe{
+\item{qc_flag}{Character. Pipe-delimited excluding flags, or \code{"pass"} if
+none fired. This is the field consumed by \code{\link[=rb_get_sequences]{rb_get_sequences()}}.}
+\item{qc_note}{Character. Pipe-delimited informational flags, or
+\code{NA_character_} if none fired.}
+}
 }
 \description{
 \itemize{
@@ -56,6 +64,30 @@ The input data frame with a \code{qc_flag} column added.
 pipe-delimited \code{qc_flag} column.
 \item \code{rb_run_qc_pipeline()}: Runs the full QC pipeline in one call.
 }
+}
+\details{
+Flags are partitioned into two classes. \emph{Hard} flags (contaminant, numt,
+internal_stop, frameshifted, sequence_short, divergent, manual_review_needed,
+check_failed) prevent a record from being labelled \code{"pass"}. \emph{Soft} flags
+(sequence_gap, ambiguous_bases, frame_incomplete, tree_error) describe
+properties or tooling limitations that do not disqualify a record. Only
+excluding flags are written to \code{qc_flag}.
+}
+\examples{
+d <- data.frame(
+  is_contaminant = FALSE, is_numt = FALSE,
+  has_stop = FALSE, frameshifted = FALSE, has_short = FALSE,
+  div_result = NA_character_, seq_type = "12S",
+  n_gap_chars = 0L, n_ambiguous = 2L, frac_ambig = 0.01,
+  frame_complete = NA, codon_check_run = NA
+)
+out <- rb_compile_qc_flags(d)
+out$qc_flag   # "pass"
+out$qc_note   # "ambiguous_bases"
+
+d$is_contaminant <- TRUE
+rb_compile_qc_flags(d)$qc_flag   # "contaminant"
+
 }
 \seealso{
 Other quality control:

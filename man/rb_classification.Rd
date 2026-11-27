@@ -76,6 +76,8 @@ and predict marker types for unknown sequences based on sequence composition.
 }
 \details{
 These functions require the tidymodels packages (\code{parsnip}, \code{recipes}, \code{rsample}, \code{yardstick}, \code{workflows}) and the \code{ranger} engine. Install them with \code{install.packages('tidymodels')} and \code{install.packages('ranger')}.
+
+\code{length} describes the biological sequence length (count of ACGT plus IUPAC ambiguity codes; excluding alignment padding).
 }
 \examples{
 \dontrun{
