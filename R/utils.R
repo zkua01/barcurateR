@@ -362,7 +362,15 @@ rb_read_ambiguity_csv <- function(path = "ambiguous_sequences.csv") {
 #' codes to `N`, for algorithms that require an ungapped ACGTN input.
 #' Never used to modify stored sequences.
 #' @param sequence Character vector.
-#' @return Character vector of the same length.
+#' @return Character vector of the same length as `sequence`, uppercased, with
+#'   alignment padding and whitespace removed and all non-ACGT characters
+#'   replaced by `N`.
+#' @details
+#' Intended solely for the input boundary of de novo alignment, where an
+#' ungapped ACGTN alphabet is required. **Do not apply to already-aligned
+#' sequences**: gap characters carry the column correspondence between taxa,
+#' and removing them invalidates per-column operations such as
+#' `Biostrings::consensusMatrix()` and equal-width distance calculations.
 #' @keywords internal
 rb_prepare_for_alignment <- function(sequence) {
   s <- toupper(as.character(sequence))

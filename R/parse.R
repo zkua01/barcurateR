@@ -503,7 +503,7 @@ rb_resolve_ambiguous <- function(data, species_col = "species", sequence_col = "
 #' @param sequence Character vector of nucleotide sequences. Case is ignored.
 #'   `NA` values are treated as empty strings.
 #'
-#' @return A [tibble::tibble()] with one row per input sequence:
+#' @return A [data.frame] with one row per input sequence:
 #' \describe{
 #'   \item{n_char}{Total characters in the stored string.}
 #'   \item{n_acgt}{Count of unambiguous bases (A, C, G, T).}
@@ -531,7 +531,9 @@ rb_resolve_ambiguous <- function(data, species_col = "species", sequence_col = "
 #'
 #'
 #' @examples
-#' rb_sequence_composition(c("ACGTACGT", "ACGT-ACGT", "ACGTNACGT", "ACGT..ACGT"))
+#' x <- rb_sequence_composition(c("ACGTACGT", "ACGT-ACGT", "ACGTNACGT", "ACGT..ACGT"))
+#' x$n_char   # 8  9  9 10  (stored string)
+#' x$n_base   # 8  8  9  8  (biological length)
 #'
 #' @export
 rb_sequence_composition <- function(sequence) {

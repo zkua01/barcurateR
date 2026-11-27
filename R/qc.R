@@ -167,8 +167,36 @@ rb_screen_numts <- function(sequences, numt_fasta, min_match_length = 50) {
 #' @param mafft,fasttree Paths to external executables.
 #'
 #' @return
-#' * `rb_check_codons()` returns a list with `has_stop`, `frameshifted`, `best_frame`.
-#' * `rb_check_rrna_integrity()` returns a list with `has_short`, `has_gaps`.
+#' * `rb_check_codons()` returns a `data.frame` with one row per input sequence:
+#' \describe{
+#'   \item{has_stop}{Logical. `TRUE` if the best reading frame contains at least 
+#'   one internal stop codon. `NA` for non-coding markers.}
+#'   \item{frameshifted}{Logical. `TRUE` iif `n_internal_stops` exceeds 
+#'   `max_internal_stops`. `NA` for non-coding markers.}
+#'   \item{n_internal_stops}{Integer. Internal stop count in the best frame, 
+#'   excluding a terminal stop. `NA` for non-coding markers.}
+#'   \item{best_frame}{Integer. Index of the selected frame among those 
+#'   evaluated (see Details). `NA` for non-coding markers.}
+#'   \item{coding_strand}{Character. `"F"` if the best frame is on the supplied 
+#'   strand, `"R"` if on its reverse complement. `NA` for non-coding markers.}
+#'   \item{frame_complete}{Logical. Whether the cleaned sequence length is a 
+#'   multiple of three (informational only). `NA` for non-coding markers.}
+#'   \item{codon_check_run}{Logical tri-state} `NA` = check not applicable 
+#'   (non-coding markers); `FALSE` = attempted but could not complete; 
+#'   `TRUE` = completed. A `FALSE` value raises the `check_failed` QC flag.}
+#' * `rb_check_rrna_integrity()` returns a `data.frame` with one row per input sequence:
+#' \describe{
+#'   \item{has_gaps}{Logical. `TRUE` if any gap character or IUPAC code is
+#'     present. Informational; does not exclude a record. `NA` for non-rRNA
+#'     markers.}
+#'   \item{has_short}{Logical. `TRUE` if `n_base` is below `min_length`.
+#'     `NA` for non-rRNA markers.}
+#'   \item{n_gap_chars}{Integer. Count of `-` and `.` characters.}
+#'   \item{n_ambiguous}{Integer. Count of IUPAC ambiguity codes.}
+#'   \item{n_base}{Integer. Biological length, `n_acgt + n_ambiguous`.}
+#'   \item{frac_ambig}{Numeric. `n_ambiguous / n_base`; `NA` when `n_base` is 0.}
+#'   \item{max_gap_run}{Integer. Length of the longest contiguous gap run.}
+#' }
 #' * `rb_check_divergence()` returns `data` with a `div_result` column.
 #' 
 #' @details
@@ -177,6 +205,54 @@ rb_screen_numts <- function(sequences, numt_fasta, min_match_length = 50) {
 #' environment (e.g., Git Bash or WSL) is properly configured, or install MSYS2, as the 
 #' default cmd.exe may not support these pipes.
 #' 
+#' Translation is attempted in six frames: three forward offsets and three on
+#' the reverse complement. The frame with the fewest internal stops is selected,
+#' so records deposited in reverse orientation are handled correctly. Frames shorter
+#' than three bases are skipped; for very short inputs `best_frame` therefore indexes
+#' the reduced set, and `coding_strand` is the more reliable identifier. 
+#' 
+#' Alignment padding (`-`, `.`) and whitespace are removed before translation;
+#' IUPAC ambiguity codes are retained and resolved with
+#' `Biostrings::translate(if.fuzzy.codon = "solve")`, so an ambiguous codon does
+#' not abort the check. A stop in the final codon is treated as a legitimate
+#' termination and excluded from the internal count.
+#'
+#' Stops are those of `genetic_code`, which defaults to `"2"` (vertebrate
+#' mitochondrial).
+#' 
+#' Gap characters and ambiguity codes are reported separately because they mean
+#' different things. `-` and `.` may be alignment padding, a genuine deletion
+#' relative to other sequences, or undetermined bases; these cannot be
+#' distinguished from the character alone, so nothing is stripped or altered
+#' here. IUPAC codes represent real base-calling uncertainty and are retained.
+#'
+#' Neither condition excludes a record by default. Presence of gap or ambiguous
+#' characters is recorded in `has_gaps` and surfaced as the informational
+#' `sequence_gap` / `ambiguous_bases` notes by [rb_compile_qc_flags()]. Only
+#' `has_short` is excluding, and it is assessed on biological length so that
+#' alignment padding cannot inflate a short record past the threshold.
+#' 
+#' @examples
+#' # Non-coding markers: check not applicable
+#' rb_check_codons("ACGTACGTACGT", gene = "12S")
+#'
+#' # Coding marker: check completes, length is a multiple of three
+#' res <- rb_check_codons(strrep("ACGT", 30), gene = "COI")
+#' res$codon_check_run
+#' res$frame_complete
+#' res$coding_strand
+#' 
+#' #' # Clean 200 bp reference
+#' rb_check_rrna_integrity(strrep("ACGT", 50), gene = "12S")
+#'
+#' # One ambiguity code: informational, still passing
+#' s <- strrep("ACGT", 50)
+#' s <- paste0(substr(s, 1, 100), "S", substr(s, 101, 200))
+#' rb_check_rrna_integrity(s, gene = "12S")
+#'
+#' # Padding does not count toward biological length
+#' padded <- paste0(strrep("A", 90), strrep("-", 50))
+#' rb_check_rrna_integrity(padded, gene = "12S")$has_short   # TRUE
 #'
 #' @family quality control
 #' @name rb_qc_checks
@@ -354,7 +430,37 @@ rb_check_divergence <- function(data, species_col = "species", gene_col = "gene"
 #' @param parallel_workers Number of parallel workers.
 #' @param coding_genes,rrna_genes Gene types for checks.
 #'
-#' @return The input data frame with a `qc_flag` column added.
+#' @return The input data frame `data` with two columns added:
+#' \describe{
+#'   \item{qc_flag}{Character. Pipe-delimited excluding flags, or `"pass"` if
+#'     none fired. This is the field consumed by [rb_get_sequences()].}
+#'   \item{qc_note}{Character. Pipe-delimited informational flags, or
+#'     `NA_character_` if none fired.}
+#' }
+#' 
+#' @details
+#' Flags are partitioned into two classes. *Hard* flags (contaminant, numt,
+#' internal_stop, frameshifted, sequence_short, divergent, manual_review_needed,
+#' check_failed) prevent a record from being labelled `"pass"`. *Soft* flags
+#' (sequence_gap, ambiguous_bases, frame_incomplete, tree_error) describe
+#' properties or tooling limitations that do not disqualify a record. Only 
+#' excluding flags are written to `qc_flag`.
+#'
+#' @examples
+#' d <- data.frame(
+#'   is_contaminant = FALSE, is_numt = FALSE,
+#'   has_stop = FALSE, frameshifted = FALSE, has_short = FALSE,
+#'   div_result = NA_character_, seq_type = "12S",
+#'   n_gap_chars = 0L, n_ambiguous = 2L, frac_ambig = 0.01,
+#'   frame_complete = NA, codon_check_run = NA
+#' )
+#' out <- rb_compile_qc_flags(d)
+#' out$qc_flag   # "pass"
+#' out$qc_note   # "ambiguous_bases"
+#'
+#' d$is_contaminant <- TRUE
+#' rb_compile_qc_flags(d)$qc_flag   # "contaminant"
+#' 
 #' @family quality control
 #' @name rb_qc_pipeline
 NULL

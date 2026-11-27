@@ -35,6 +35,8 @@ if (getRversion() >= "2.15.1") {
 #' @details
 #' These functions require the tidymodels packages (`parsnip`, `recipes`, `rsample`, `yardstick`, `workflows`) and the `ranger` engine. Install them with `install.packages('tidymodels')` and `install.packages('ranger')`.
 #' 
+#' `length` describes the biological sequence length (count of ACGT plus IUPAC ambiguity codes; excluding alignment padding).
+#' 
 #' @examples
 #' \dontrun{
 #' # Extract features
