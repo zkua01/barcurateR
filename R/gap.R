@@ -311,7 +311,7 @@ rb_run_barcode_gap <- function(data, markers = c("COI", "12S", "16S", "genome"),
     }
 
     species_list <- unique(db[[species_col]])
-    seqs <- Biostrings::DNAStringSet(db[[sequence_col]])
+    seqs <- Biostrings::DNAStringSet(rb_prepare_for_alignment(db[[sequence_col]]))
     names(seqs) <- if ("unique_code" %in% names(db)) db$unique_code else paste0("seq_", seq_len(nrow(db)))
 
     aligned <- DECIPHER::AlignSeqs(seqs, verbose = FALSE)
