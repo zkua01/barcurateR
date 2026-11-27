@@ -144,6 +144,19 @@ rb_screen_numts <- function(sequences, numt_fasta, min_match_length = 50) {
 #' @param coding_genes Gene types to check for codon issues.
 #'   Default `c("COI")`.
 #' @param genetic_code Genetic code table (default `"2"` for vertebrate mtDNA).
+#' @param max_internal_stops Integer scalar (default `2L`). Maximum number of
+#'   internal stop codons tolerated in the best of the six reading frames
+#'   before the record is flagged `frameshifted`. The terminal stop of a
+#'   complete CDS is not counted. `has_stop` is set independently whenever any
+#'   internal stop is present, so lowering this value only tightens the
+#'   `frameshifted` flag, not `internal_stop`.
+#' @param max_ambiguous_frac Numeric scalar in `[0, 1]`, or `NULL` (default).
+#'   Optional exclusion threshold on the proportion of ambiguous (IUPAC) bases
+#'   among called bases (`frac_ambig`). When supplied, records with
+#'   `frac_ambig > max_ambiguous_frac` receive the `ambiguous_excess` flag and
+#'   are excluded from the passing set. When `NULL`, ambiguity never excludes a
+#'   record; it is reported only through the informational `ambiguous_bases`
+#'   note and the `n_ambiguous` / `frac_ambig` metadata columns. 
 #' @param rrna_genes Gene types to check for rRNA integrity.
 #' @param min_length Minimum expected length for rRNA sequences.
 #' @param data A data frame containing sequences and metadata.
@@ -172,49 +185,77 @@ NULL
 #' @rdname rb_qc_checks
 #' @export
 rb_check_codons <- function(sequence, gene,
-                            coding_genes = c("COI"),
-                            genetic_code = "2") {
-  if (!gene %in% coding_genes) {
-    return(list(has_stop = NA, frameshifted = NA, best_frame = NA))
-  }
+                            coding_genes = c("COI","CYTB","complete_genome","genome","multi_marker"),
+                            genetic_code = "2", max_internal_stops = 2L) {
+  n <- length(sequence)
+  out <- data.frame(has_stop = rep(NA, n), frameshifted = rep(NA, n),
+                    n_internal_stops = rep(NA_integer_, n), best_frame = rep(NA_integer_, n),
+                    coding_strand = rep(NA_character_, n), frame_complete = rep(NA, n),
+                    codon_check_run = rep(NA, n), stringsAsFactors = FALSE)
+  idx <- which(gene %in% coding_genes)
+  if (!length(idx)) return (out)
+  gc <- Biostrings::getGeneticCode(genetic_code)
   
-  seq_clean <- gsub("[^ACGT]", "N", toupper(sequence))
-  if (nchar(seq_clean) == 0 || !any(grepl("[ACGT]", seq_clean))) {
-    return(list(has_stop = NA, frameshifted = NA, best_frame = NA))
+  for(i in idx){
+    out$codon_check_run[i] <- FALSE
+    s <- gsub("[^ACGTRYSWKMBDHVN]", "", toupper(sequence[i]))
+    if (nchar(s) < 3) next
+    d <- Biostrings::DNAString(s)
+    rc <- Biostrings::reverseComplement(d)
+    cand <- list(F1 = d, F2 = Biostrings::subseq(d, 2), F3 = Biostrings::subseq(d, 3),
+                 R1 = rc, R2 = Biostrings::subseq(rc, 2), R3 = Biostrings::subseq(rc, 3))
+    cand <- cand[vapply(cand, function(x) as.integer(length(x)), integer(1)) >= 3]
+    if (!length(cand)) next
+    
+    aa <- lapply(cand, function(x) {
+      x <- Biostrings::subseq(x, 1, length(x) - (length(x) %% 3))
+      tryCatch(Biostrings::translate(x, genetic.code = gc, no.init.codon = TRUE, if.fuzzy.codon = "solve"),
+               error = function(e) NULL)
+    })
+    
+    ok <- !vapply(aa, is.null, logical(1))
+    if (!any(ok)) next
+    aa <- aa[ok]
+    nm <- names(cand)[ok]
+    
+    stops <- vapply(aa, function(a){
+      v <- as.character(a)
+      tot <- as.integer(sum(Biostrings::letterFrequency(a, "*")))
+      if (nzchar(v) && substr(v, nchar(v), nchar(v)) == "*") tot - 1L else tot
+    }, integer(1))
+    
+    b <- which.min(stops)
+    out$codon_check_run[i] <- TRUE
+    out$n_internal_stops[i] <- stops[b]
+    out$has_stop[i] <- stops[b] > 0L
+    out$best_frame[i] <- b
+    out$coding_strand[i] <- substr(nm[b], 1, 1)
+    out$frame_complete[i] <- (nchar(s) %% 3 == 0)
+    out$frameshifted[i] <- stops[b] > max_internal_stops
   }
-  
-  tryCatch({
-    gc_table <- Biostrings::getGeneticCode(genetic_code)
-    frame_translations <- lapply(0:2, function(frame) {
-      subseq <- substr(seq_clean, frame + 1, nchar(seq_clean))
-      subseq <- substr(subseq, 1, nchar(subseq) - (nchar(subseq) %% 3))
-      if (nchar(subseq) == 0) return(NA)
-      Biostrings::translate(Biostrings::DNAString(subseq), genetic.code = gc_table)
-    })
-    stop_counts <- sapply(frame_translations, function(aa) {
-      if (identical(aa, NA)) return(Inf)
-      sum(Biostrings::countPattern("*", aa))
-    })
-    best_frame <- which.min(stop_counts)
-    min_stops <- stop_counts[best_frame]
-    seq_length <- nchar(seq_clean)
-    list(
-      has_stop = min_stops > 0,
-      frameshifted = (seq_length %% 3 != 0) || (min_stops > 2),
-      best_frame = best_frame
-    )
-  }, error = function(e) list(has_stop = NA, frameshifted = NA, best_frame = NA))
+  out
 }
 
 #' @rdname rb_qc_checks
 #' @export
 rb_check_rrna_integrity <- function(sequence, gene, rrna_genes = c("12S", "16S"),
-                                    min_length = 100) {
-  if (!gene %in% rrna_genes) return(list(has_short = NA, has_gaps = NA))
-  list(
-    has_short = nchar(sequence) < min_length,
-    has_gaps = grepl("[^ACGT]", sequence)
-  )
+                                    min_length = 100L, max_ambiguous_frac = NULL) {
+  comp <- rb_sequence_composition(sequence)
+  
+  n <- length(sequence)
+  out <- data.frame(has_gaps = rep(NA, n),
+                    has_short = rep(NA, n),
+                    n_gap_chars = comp$n_dash + comp$n_dot,
+                    n_ambiguous = comp$n_ambig,
+                    n_base = comp$n_base,
+                    frac_ambig = comp$frac_ambig,
+                    max_gap_run = comp$max_gap_run, stringsAsFactors = FALSE)
+  idx <- which(gene %in% rrna_genes)
+  if(!length(idx)) return(out)
+  out$has_gaps[idx] <- (out$n_gap_chars[idx] + comp$n_ambig[idx]) > 0
+  out$has_short[idx] <- comp$n_base[idx] < min_length
+  
+  out
 }
 
 #' @rdname rb_qc_checks
@@ -296,8 +337,16 @@ rb_check_divergence <- function(data, species_col = "species", gene_col = "gene"
 #' * `rb_run_qc_pipeline()`: Runs the full QC pipeline in one call.
 #'
 #' @param data A data frame containing sequences and check results.
-#' @param checks Named list mapping flag names to logical column names.
-#' @param extra_flag_fn Optional function returning additional flags.
+#' @param exclude_flags Character vector of flags that prevent `"pass"`.
+#'   `NULL` (default) uses the hard-flag set defined in the function body.
+#' @param max_ambiguous_frac Numeric scalar in `[0, 1]`, or `NULL` (default).
+#'   Optional exclusion threshold on the proportion of ambiguous (IUPAC) bases
+#'   among called bases (`frac_ambig`). When supplied, records with
+#'   `frac_ambig > max_ambiguous_frac` receive the `ambiguous_excess` flag and
+#'   are excluded from the passing set. When `NULL`, ambiguity never excludes a
+#'   record; it is reported only through the informational `ambiguous_bases`
+#'   note and the `n_ambiguous` / `frac_ambig` metadata columns. Requires the
+#'   `frac_ambig` column to be present.
 #' @param blast_db Path to a BLAST database.
 #' @param numt_fasta Path to a NUMT FASTA file.
 #' @param species_col,gene_col,sequence_col,id_col Column names.
@@ -313,43 +362,58 @@ NULL
 #' @rdname rb_qc_pipeline
 #' @export
 rb_compile_qc_flags <- function(data,
-                                checks = list(
-                                  contaminant = "is_contaminant",
-                                  numt = "is_numt",
-                                  internal_stop = "has_stop",
-                                  frameshifted = "frameshifted",
-                                  sequence_short = "has_short",
-                                  sequence_gap = "has_gaps"
-                                ),
-                                extra_flag_fn = NULL) {
-  flag_vec <- vapply(names(checks), function(flag_name) {
-    col <- checks[[flag_name]]
-    if (!col %in% names(data)) return(rep(FALSE, nrow(data)))
-    val <- data[[col]]
-    ifelse(is.na(val), FALSE, as.logical(val))
-  }, logical(nrow(data)))
+                                exclude_flags = NULL,
+                                max_ambiguous_frac = NULL) {
   
-  # Unconditional reshape to matrix -- handles length(checks) == 1 (where
-  # vapply would otherwise return a bare vector) identically to > 1.
-  flag_matrix <- matrix(flag_vec, nrow = nrow(data), ncol = length(checks),
-                        dimnames = list(NULL, names(checks)))
+  hard_flags <- c("contaminant", "numt", "internal_stop", "frameshifted", "sequence_short", "divergent", "manual_review_needed", "check_failed")
+  soft_flags <- c("sequence_gap", "ambiguous_bases", "frame_incomplete", "tree_error")
   
-  qc_flag <- apply(flag_matrix, 1, function(row) {
-    hit <- names(checks)[row]
-    if (length(hit) == 0) "" else paste(hit, collapse = "|")
-  })
+  if(is.null(exclude_flags)) exclude_flags <- hard_flags
   
-  if (!is.null(extra_flag_fn)) {
-    extra_flags <- extra_flag_fn(data)
-    qc_flag <- ifelse(
-      nzchar(extra_flags),
-      ifelse(nzchar(qc_flag), paste(qc_flag, extra_flags, sep = "|"), extra_flags),
-      qc_flag
-    )
+  flag_map <- list(contaminant = data$is_contaminant,
+                   numt = data$is_numt,
+                   internal_stop = data$has_stop,
+                   frameshifted = data$frameshifted,
+                   sequence_short = data$has_short,
+                   divergent = !is.na(data$div_result) & data$div_result == "divergent",
+                   sequence_gap = data$n_gap_chars > 0,
+                   ambiguous_bases = data$n_ambiguous > 0,
+                   frame_incomplete = !is.na(data$frame_complete) & !data$frame_complete,
+                   check_failed = !is.na(data$codon_check_run) & !data$codon_check_run)
+  flag_map$tree_error <- !is.na(data$div_result) & 
+    data$div_result %in% c("tree_error", "high_length_variation", "processing_error")
+  flag_map$manual_review_needed <- data$seq_type %in% c("other", "other_unknown")
+  if(!is.null(max_ambiguous_frac)){
+    flag_map$ambiguous_excess <- !is.na(data$frac_ambig) & data$frac_ambig > max_ambiguous_frac
+    exclude_flags <- union(exclude_flags, "ambiguous_excess")
   }
   
-  qc_flag[qc_flag == ""] <- "pass"
-  data$qc_flag <- qc_flag
+  unknown <- setdiff(names(flag_map), c(hard_flags, soft_flags, "ambiguous_excess"))
+  if(length(unknown)){
+    warning("Unclassified flags treated as informational: ", paste(unknown, collapse = ", "))
+  }
+  
+  fired <- lapply(flag_map, function(x){
+    x <- as.logical(x)
+    x[is.na(x)] <- FALSE
+    x
+  })
+  
+  pick <- function(i, wanted){
+    hits <- names(fired)[vapply(fired, function(f) f[i], logical(1))]
+    hits <- intersect(hits, wanted)
+    if(!length(hits)) NA_character_ else paste(hits, collapse = "|")
+  }
+  
+  n <- nrow(data)
+  data$qc_flag <- vapply(seq_len(n), function(i){
+    v <- pick(i, exclude_flags)
+    if(is.na(v)) "pass" else v
+  }, character(1))
+  data$qc_note <- vapply(seq_len(n), function(i){
+    pick(i, setdiff(names(fired), exclude_flags))
+  }, character(1))
+  
   data
 }
 
@@ -425,27 +489,7 @@ rb_run_qc_pipeline <- function(data, blast_db, numt_fasta = NULL,
   )
   
   message(">>> Compiling QC flags")
-  extra_fn <- function(d) {
-    flags <- rep("", nrow(d))
-    add <- function(cond, label) {
-      flags[cond] <- ifelse(
-        nzchar(flags[cond]),
-        paste(flags[cond], label, sep = "|"),
-        label
-      )
-    }
-    add(!is.na(d$div_result) & d$div_result == "divergent", "divergent")
-    add(
-      !is.na(d$div_result) & d$div_result %in% c(
-        "tree_error", "high_length_variation", "processing_error"
-      ),
-      paste0("tree_", d$div_result)
-    )
-    add(d[[gene_col]] == "other", "manual_review_needed")
-    flags
-  }
-  
-  rb_compile_qc_flags(data, extra_flag_fn = extra_fn)
+  rb_compile_qc_flags(data)
 }
 
 #' Check for excessive ambiguous-base content
