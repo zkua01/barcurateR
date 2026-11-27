@@ -60,6 +60,7 @@ rb_remove_primers(
 Other parsing:
 \code{\link{rb_ambiguity_utils}},
 \code{\link{rb_combine_resolve}},
-\code{\link{rb_parse_sources}}
+\code{\link{rb_parse_sources}},
+\code{\link[=rb_sequence_composition]{rb_sequence_composition()}}
 }
 \concept{parsing}

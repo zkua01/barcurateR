@@ -70,6 +70,7 @@ if (nrow(ambiguities) > 0) {
 Other parsing:
 \code{\link{rb_combine_resolve}},
 \code{\link{rb_parse_sources}},
+\code{\link[=rb_sequence_composition]{rb_sequence_composition()}},
 \code{\link{rb_sequence_prep}}
 }
 \concept{parsing}

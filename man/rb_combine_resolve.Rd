@@ -101,6 +101,7 @@ resolved <- rb_resolve_ambiguous(
 Other parsing:
 \code{\link{rb_ambiguity_utils}},
 \code{\link{rb_parse_sources}},
+\code{\link[=rb_sequence_composition]{rb_sequence_composition()}},
 \code{\link{rb_sequence_prep}}
 }
 \concept{parsing}

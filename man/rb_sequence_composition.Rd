@@ -49,3 +49,11 @@ x$n_char   # 8  9  9 10  (stored string)
 x$n_base   # 8  8  9  8  (biological length)
 
 }
+\seealso{
+Other parsing:
+\code{\link{rb_ambiguity_utils}},
+\code{\link{rb_combine_resolve}},
+\code{\link{rb_parse_sources}},
+\code{\link{rb_sequence_prep}}
+}
+\concept{parsing}

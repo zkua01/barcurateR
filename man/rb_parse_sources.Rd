@@ -121,6 +121,7 @@ parsed_ncbi <- rb_parse_source_table(
 Other parsing:
 \code{\link{rb_ambiguity_utils}},
 \code{\link{rb_combine_resolve}},
+\code{\link[=rb_sequence_composition]{rb_sequence_composition()}},
 \code{\link{rb_sequence_prep}}
 }
 \concept{parsing}
